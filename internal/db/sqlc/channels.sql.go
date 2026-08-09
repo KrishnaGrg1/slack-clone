@@ -55,6 +55,45 @@ func (q *Queries) GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, 
 	return i, err
 }
 
+const getChannelMembers = `-- name: GetChannelMembers :many
+SELECT u.id, u.username, u.email, u.avatar_url
+FROM channel_members cm
+JOIN users u ON u.id = cm.user_id
+WHERE cm.channel_id = $1
+`
+
+type GetChannelMembersRow struct {
+	ID        pgtype.UUID `json:"id"`
+	Username  string      `json:"username"`
+	Email     string      `json:"email"`
+	AvatarUrl pgtype.Text `json:"avatar_url"`
+}
+
+func (q *Queries) GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error) {
+	rows, err := q.db.Query(ctx, getChannelMembers, channelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetChannelMembersRow
+	for rows.Next() {
+		var i GetChannelMembersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.AvatarUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getChannels = `-- name: GetChannels :many
 SELECT id, name, is_private, created_by, created_at FROM channels
 WHERE is_private = false
@@ -84,6 +123,27 @@ func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const isChannelMember = `-- name: IsChannelMember :one
+SELECT EXISTS (
+    SELECT 1
+    FROM channel_members
+    WHERE channel_id = $1
+      AND user_id = $2
+)
+`
+
+type IsChannelMemberParams struct {
+	ChannelID pgtype.UUID `json:"channel_id"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isChannelMember, arg.ChannelID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const joinChannel = `-- name: JoinChannel :exec

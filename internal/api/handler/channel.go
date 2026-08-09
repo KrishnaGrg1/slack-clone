@@ -191,6 +191,34 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isMember, err := h.store.Queries.IsChannelMember(
+		r.Context(),
+		db.IsChannelMemberParams{
+			ChannelID: channelUUID,
+			UserID:    userUUID,
+		},
+	)
+	if err != nil {
+		response.InternalServerError(
+			w,
+			"CH_008",
+			"failed to check channel membership",
+			err.Error(),
+		)
+		return
+	}
+
+	if isMember {
+		response.Error(
+			w,
+			http.StatusConflict,
+			"already a channel member",
+			"CH_009",
+			"user is already a member of this channel",
+		)
+		return
+	}
+
 	if err := h.store.Queries.JoinChannel(
 		r.Context(),
 		db.JoinChannelParams{
@@ -198,11 +226,10 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 			UserID:    userUUID,
 		},
 	); err != nil {
-		response.Error(
+		response.InternalServerError(
 			w,
-			http.StatusInternalServerError,
+			"CH_010",
 			"failed to join channel",
-			"CH_008",
 			err.Error(),
 		)
 		return
@@ -269,6 +296,34 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isMember, err := h.store.Queries.IsChannelMember(
+		r.Context(),
+		db.IsChannelMemberParams{
+			ChannelID: channelUUID,
+			UserID:    userUUID,
+		},
+	)
+	if err != nil {
+		response.InternalServerError(
+			w,
+			"CH_011",
+			"failed to check channel membership",
+			err.Error(),
+		)
+		return
+	}
+
+	if !isMember {
+		response.Error(
+			w,
+			http.StatusConflict,
+			"not a channel member",
+			"CH_012",
+			"user must be a member of the channel to leave",
+		)
+		return
+	}
+
 	if err := h.store.Queries.LeaveChannel(
 		r.Context(),
 		db.LeaveChannelParams{
@@ -276,11 +331,10 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 			UserID:    userUUID,
 		},
 	); err != nil {
-		response.Error(
+		response.InternalServerError(
 			w,
-			http.StatusInternalServerError,
+			"CH_013",
 			"failed to leave channel",
-			"CH_011",
 			err.Error(),
 		)
 		return
@@ -292,6 +346,56 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 		"left channel",
 		nil,
 	)
+}
+
+func (h *ChannelHandler) GetChannel(w http.ResponseWriter, r *http.Request) {
+	channelID := chi.URLParam(r, "id")
+
+	channelUUID, err := ParseToPGUUID(channelID)
+	if err != nil {
+		response.BadRequest(
+			w,
+			"CH_013",
+			"invalid channel id",
+			"channel ID must be a valid UUID",
+		)
+		return
+	}
+
+	channel, err := h.store.Queries.GetChannelById(
+		r.Context(),
+		channelUUID,
+	)
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusNotFound,
+			"channel not found",
+			"CH_014",
+			"No channel with that ID",
+		)
+		return
+	}
+
+	channelMembers, err := h.store.Queries.GetChannelMembers(
+		r.Context(),
+		channelUUID,
+	)
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"failed to get channel members",
+			"CH_015",
+			err.Error(),
+		)
+		return
+	}
+
+	response.Success(w, http.StatusOK, "channel fetched", map[string]any{
+		"channel":         channel,
+		"channel_members": channelMembers,
+	})
 }
 
 func ParseToPGUUID(value string) (pgtype.UUID, error) {

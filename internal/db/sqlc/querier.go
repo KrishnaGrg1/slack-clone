@@ -14,9 +14,11 @@ type Querier interface {
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
+	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
 	GetChannels(ctx context.Context) ([]Channel, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
+	IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error)
 	JoinChannel(ctx context.Context, arg JoinChannelParams) error
 	LeaveChannel(ctx context.Context, arg LeaveChannelParams) error
 }
