@@ -36,6 +36,7 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 			})
 			r.Route("/channels", func(r chi.Router) {
 				r.Post("/", channelHandler.CreateChannel)
+				r.Get("/", channelHandler.GetChannels)
 			})
 		})
 	})

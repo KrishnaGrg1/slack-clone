@@ -55,6 +55,37 @@ func (q *Queries) GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, 
 	return i, err
 }
 
+const getChannels = `-- name: GetChannels :many
+SELECT id, name, is_private, created_by, created_at FROM channels
+WHERE is_private = false
+`
+
+func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
+	rows, err := q.db.Query(ctx, getChannels)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.IsPrivate,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const joinChannel = `-- name: JoinChannel :exec
 INSERT INTO channel_members(channel_id,user_id)
 VALUES ($1,$2)
@@ -68,5 +99,20 @@ type JoinChannelParams struct {
 
 func (q *Queries) JoinChannel(ctx context.Context, arg JoinChannelParams) error {
 	_, err := q.db.Exec(ctx, joinChannel, arg.ChannelID, arg.UserID)
+	return err
+}
+
+const leaveChannel = `-- name: LeaveChannel :exec
+DELETE FROM channel_members
+WHERE channel_id = $1 AND user_id = $2
+`
+
+type LeaveChannelParams struct {
+	ChannelID pgtype.UUID `json:"channel_id"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) LeaveChannel(ctx context.Context, arg LeaveChannelParams) error {
+	_, err := q.db.Exec(ctx, leaveChannel, arg.ChannelID, arg.UserID)
 	return err
 }
