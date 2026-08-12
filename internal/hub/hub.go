@@ -4,21 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"sync"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/db"
+	"github.com/KrishnaGrg1/slack-clone/internal/dsa"
 	"github.com/redis/go-redis/v9"
 )
 
 const channel = "slack:clone:checks"
 
+// historyCapacity is the number of messages kept in memory per room.
+const historyCapacity = 100
+
 type Message struct {
 	SenderID string `json:"sender_id"`
 	RoomID   string `json:"room_id"`
 	Content  string `json:"content"`
+	ParentID string `json:"parent_id,omitempty"` // ← add
 }
 
 type Hub struct {
 	// Registered clients grouped by room.
 	rooms map[string]map[*Client]bool
+
+	//history message
+	history map[string]*dsa.RingBuffer[Message]
 
 	// Inbound messages from the clients.
 	broadcast chan Message
@@ -29,16 +39,22 @@ type Hub struct {
 	// Unregister requests from clients.
 	unregister chan *Client
 	redis      *redis.Client
+	writer     *db.DBWriter // ← add
+
+	// historyMu guards the history map (read in GetHistory, written in Run).
+	historyMu sync.RWMutex
 }
 
-func NewHub(rdb *redis.Client) *Hub {
+func NewHub(rdb *redis.Client, writer *db.DBWriter) *Hub {
 
 	return &Hub{
 		broadcast:  make(chan Message),
+		history:    make(map[string]*dsa.RingBuffer[Message]),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		rooms:      make(map[string]map[*Client]bool),
 		redis:      rdb,
+		writer:     writer,
 	}
 }
 
@@ -76,23 +92,27 @@ func (h *Hub) Run() {
 				}
 			}
 		case message := <-h.broadcast:
-			// When a message is received on the broadcast channel,
-			// marshal it to JSON and attempt to send the payload to
-			// every connected client.
-			// If marshaling fails for any reason, skip sending to all
-			// clients for that message (continue to next client).
-			// Sending to a client's send channel is non-blocking: if the
-			// client's channel is full or not receiving, fall through to
-			// the default case where the client is considered dead and
-			// removed.
-			room, ok := h.rooms[message.RoomID] // only the target room
+			room, ok := h.rooms[message.RoomID]
 			if !ok {
 				continue
 			}
+
+			// push to ring buffer
+			h.historyMu.Lock()
+			buf, ok := h.history[message.RoomID]
+			if !ok {
+				buf = dsa.NewRingBuffer[Message](historyCapacity)
+				h.history[message.RoomID] = buf
+			}
+			h.historyMu.Unlock()
+			buf.Push(message)
+
 			payload, err := json.Marshal(message)
 			if err != nil {
 				continue
 			}
+
+			// fan out to clients
 			for client := range room {
 				select {
 				case client.send <- payload:
@@ -104,6 +124,14 @@ func (h *Hub) Run() {
 					}
 				}
 			}
+
+			// async DB write — after fan-out so latency is not affected
+			h.writer.Enqueue(db.WriteJob{
+				ChannelID: message.RoomID,
+				SenderID:  message.SenderID,
+				Content:   message.Content,
+				ParentID:  message.ParentID, // add ParentID to Message struct too
+			})
 
 		}
 	}
@@ -138,4 +166,14 @@ func (h *Hub) Publish(ctx context.Context, payload any) error {
 	}
 
 	return h.redis.Publish(ctx, channel, data).Err()
+}
+
+func (h *Hub) GetHistory(roomID string) []Message {
+	h.historyMu.RLock()
+	buf, ok := h.history[roomID]
+	h.historyMu.RUnlock()
+	if !ok {
+		return nil
+	}
+	return buf.Slice()
 }

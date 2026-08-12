@@ -21,12 +21,16 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 
 	authHandler := handler.NewAuthHandler(store, cfg.JWT_SECRET)
 	channelHandler := handler.NewChannelHandler(store)
+	msgHandler := handler.NewMessageHandler(store, h)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			response.Success(w, http.StatusOK, "Health is good", map[string]string{"status": "ok"})
 		})
 		r.Route("/auth", func(r chi.Router) {
+			//register user
 			r.Post("/register", authHandler.Register)
+
+			//login user
 			r.Post("/login", authHandler.Login)
 		})
 		r.Group(func(r chi.Router) {
@@ -35,13 +39,26 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 				hub.ServeWs(h, w, r)
 			})
 			r.Route("/channels", func(r chi.Router) {
+				//create channel
 				r.Post("/", channelHandler.CreateChannel)
+				//Get all public channels
 				r.Get("/", channelHandler.GetChannels)
 
+				//get channel by id
 				r.Get("/{id}", channelHandler.GetChannel)
+				//join channel
 				r.Post("/{id}/join", channelHandler.JoinChannel)
+				//leave channel
 				r.Delete("/{id}/leave", channelHandler.LeaveChannel)
+				r.Get("/{id}/messages", msgHandler.GetMessages) // ← add
 			})
+
+			r.Route("/messages", func(r chi.Router) {
+				r.Get("/{id}/thread", msgHandler.GetThread) // ← add
+				r.Patch("/{id}", msgHandler.EditMessage)    // ← add
+				r.Delete("/{id}", msgHandler.DeleteMessage) // ← add
+			})
+
 		})
 	})
 	return r

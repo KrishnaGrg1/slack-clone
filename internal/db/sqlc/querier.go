@@ -12,10 +12,16 @@ import (
 
 type Querier interface {
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error)
+	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteMessage(ctx context.Context, arg DeleteMessageParams) error
+	EditMessage(ctx context.Context, arg EditMessageParams) (Message, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
 	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
+	GetChannelMessages(ctx context.Context, arg GetChannelMessagesParams) ([]GetChannelMessagesRow, error)
 	GetChannels(ctx context.Context) ([]Channel, error)
+	GetMessageByID(ctx context.Context, id pgtype.UUID) (Message, error)
+	GetThreadMessages(ctx context.Context, parentID pgtype.UUID) ([]GetThreadMessagesRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
 	IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error)

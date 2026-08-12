@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 
 	apiRouter "github.com/KrishnaGrg1/slack-clone/internal/api"
 	"github.com/KrishnaGrg1/slack-clone/internal/config"
+	"github.com/KrishnaGrg1/slack-clone/internal/db"
 	"github.com/KrishnaGrg1/slack-clone/internal/hub"
 	"github.com/KrishnaGrg1/slack-clone/internal/redis"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
@@ -23,8 +25,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	h := hub.NewHub(rdb)
+	writer := db.NewDBWriter(s.Queries) // ← add
+	h := hub.NewHub(rdb, writer)
 	go h.Run()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go writer.Run(ctx)
+
 	router := apiRouter.NewRouter(cfg, s, h)
 
 	log.Println("Server running on", cfg.PORT)

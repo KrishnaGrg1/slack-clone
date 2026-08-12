@@ -4,24 +4,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/db"
+	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/redis/go-redis/v9"
 )
 
 func startHub(t *testing.T) *Hub {
+	s, _ := store.Connect("localhost")
 	t.Helper()
-
+	writer := db.NewDBWriter(s.Queries) // ← add
 	h := NewHub(redis.NewClient(&redis.Options{
 		Addr: "redis://localhost:6379",
-	}))
+	}), writer)
 	go h.Run()
 
 	return h
 }
 
 func TestNewHub(t *testing.T) {
+	s, _ := store.Connect("localhost")
+	writer := db.NewDBWriter(s.Queries) // ← add
 	h := NewHub(redis.NewClient(&redis.Options{
 		Addr: "redis://localhost:6379",
-	}))
+	}), writer)
 
 	if h == nil {
 		t.Fatal("expected hub to be initialized")
