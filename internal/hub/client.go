@@ -2,6 +2,7 @@ package hub
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,10 +75,21 @@ func (c *Client) readPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		fmt.Println("message", string(message))
+
+		var payload struct {
+			Content  string `json:"content"`
+			ParentID string `json:"parent_id,omitempty"`
+		}
+		if err := json.Unmarshal(message, &payload); err != nil {
+			log.Printf("invalid message format: %v", err)
+			continue
+		}
+
 		c.hub.broadcast <- Message{
 			SenderID: c.senderID,
-			Content:  string(message),
+			Content:  payload.Content,
 			RoomID:   c.roomID,
+			ParentID: payload.ParentID,
 		}
 	}
 }
