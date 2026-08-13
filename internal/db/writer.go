@@ -6,7 +6,8 @@ import (
 	"time"
 
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
-	"github.com/google/uuid"
+	"github.com/KrishnaGrg1/slack-clone/internal/pgutil"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -67,29 +68,29 @@ func (w *DBWriter) Run(ctx context.Context) {
 
 func (w *DBWriter) flush(ctx context.Context, batch []WriteJob) {
 	for _, job := range batch {
-		channelUUID, err := uuid.Parse(job.ChannelID)
+		channelUUID, err := pgutil.ParseToPGUUID(job.ChannelID)
 		if err != nil {
 			log.Println("invalid channel id:", job.ChannelID)
 			continue
 		}
-		senderUUID, err := uuid.Parse(job.SenderID)
+		senderUUID, err := pgutil.ParseToPGUUID(job.SenderID)
 		if err != nil {
 			log.Println("invalid sender id:", job.SenderID)
 			continue
 		}
 
 		params := db.CreateMessageParams{
-			ChannelID: pgtype.UUID{Bytes: [16]byte(channelUUID), Valid: true},
-			SenderID:  pgtype.UUID{Bytes: [16]byte(senderUUID), Valid: true},
+			ChannelID: channelUUID,
+			SenderID:  senderUUID,
 			Content:   job.Content,
 			MsgType:   pgtype.Text{String: "text", Valid: true},
 		}
 
 		// set parent if thread reply
 		if job.ParentID != "" {
-			parentUUID, err := uuid.Parse(job.ParentID)
+			parentUUID, err := pgutil.ParseToPGUUID(job.ParentID)
 			if err == nil {
-				params.ParentID = pgtype.UUID{Bytes: [16]byte(parentUUID), Valid: true}
+				params.ParentID = parentUUID
 			}
 		}
 

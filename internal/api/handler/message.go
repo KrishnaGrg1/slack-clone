@@ -9,6 +9,7 @@ import (
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
 	"github.com/KrishnaGrg1/slack-clone/internal/hub"
 	"github.com/KrishnaGrg1/slack-clone/internal/middleware"
+	"github.com/KrishnaGrg1/slack-clone/internal/pgutil"
 	"github.com/KrishnaGrg1/slack-clone/internal/response"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/go-chi/chi"
@@ -28,7 +29,7 @@ func NewMessageHandler(s *store.Store, h *hub.Hub) *MessageHandler {
 // GET /channels/:id/messages
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	channelID := chi.URLParam(r, "id")
-	channelUUID, err := ParseToPGUUID(channelID)
+	channelUUID, err := pgutil.ParseToPGUUID(channelID)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "MSG_001", "invalid channel id", "channel ID must be a valid UUID")
 		return
@@ -78,7 +79,7 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 // GET /messages/:id/thread
 func (h *MessageHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 	parentID := chi.URLParam(r, "id")
-	parentUUID, err := ParseToPGUUID(parentID)
+	parentUUID, err := pgutil.ParseToPGUUID(parentID)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "MSG_001", "invalid parent id", "parent ID must be a valid UUID")
 		return
@@ -100,7 +101,7 @@ func (h *MessageHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgID := chi.URLParam(r, "id")
-	msgUUID, err := ParseToPGUUID(msgID)
+	msgUUID, err := pgutil.ParseToPGUUID(msgID)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "MSG_004", "invalid message id", "message ID must be a valid UUID")
 		return
@@ -114,7 +115,7 @@ func (h *MessageHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	senderUUID, err := ParseToPGUUID(userID)
+	senderUUID, err := pgutil.ParseToPGUUID(userID)
 	if err != nil {
 		response.Error(w, http.StatusUnauthorized, "AUTH_002", "invalid user id", "failed to parse user ID from context")
 		return
@@ -146,13 +147,13 @@ func (h *MessageHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msgID := chi.URLParam(r, "id")
-	msgUUID, err := ParseToPGUUID(msgID)
+	msgUUID, err := pgutil.ParseToPGUUID(msgID)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "MSG_004", "invalid message id", "message ID must be a valid UUID")
 		return
 	}
 
-	senderUUID, err := ParseToPGUUID(userID)
+	senderUUID, err := pgutil.ParseToPGUUID(userID)
 	if err != nil {
 		response.Error(w, http.StatusUnauthorized, "AUTH_002", "invalid user id", "failed to parse user ID from context")
 		return

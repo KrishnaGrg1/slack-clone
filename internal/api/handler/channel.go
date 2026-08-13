@@ -5,10 +5,10 @@ import (
 
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
 	"github.com/KrishnaGrg1/slack-clone/internal/middleware"
+	"github.com/KrishnaGrg1/slack-clone/internal/pgutil"
 	"github.com/KrishnaGrg1/slack-clone/internal/response"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -63,7 +63,7 @@ func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	creatorUUID, err := ParseToPGUUID(userID)
+	creatorUUID, err := pgutil.ParseToPGUUID(userID)
 	if err != nil {
 		response.Error(
 			w,
@@ -153,7 +153,7 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 
 	channelID := chi.URLParam(r, "id")
 
-	userUUID, err := ParseToPGUUID(userID)
+	userUUID, err := pgutil.ParseToPGUUID(userID)
 	if err != nil {
 		response.Error(
 			w,
@@ -165,7 +165,7 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelUUID, err := ParseToPGUUID(channelID)
+	channelUUID, err := pgutil.ParseToPGUUID(channelID)
 	if err != nil {
 		response.BadRequest(
 			w,
@@ -258,7 +258,7 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 
 	channelID := chi.URLParam(r, "id")
 
-	userUUID, err := ParseToPGUUID(userID)
+	userUUID, err := pgutil.ParseToPGUUID(userID)
 	if err != nil {
 		response.Error(
 			w,
@@ -270,7 +270,7 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channelUUID, err := ParseToPGUUID(channelID)
+	channelUUID, err := pgutil.ParseToPGUUID(channelID)
 	if err != nil {
 		response.BadRequest(
 			w,
@@ -351,7 +351,7 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 func (h *ChannelHandler) GetChannel(w http.ResponseWriter, r *http.Request) {
 	channelID := chi.URLParam(r, "id")
 
-	channelUUID, err := ParseToPGUUID(channelID)
+	channelUUID, err := pgutil.ParseToPGUUID(channelID)
 	if err != nil {
 		response.BadRequest(
 			w,
@@ -396,16 +396,4 @@ func (h *ChannelHandler) GetChannel(w http.ResponseWriter, r *http.Request) {
 		"channel":         channel,
 		"channel_members": channelMembers,
 	})
-}
-
-func ParseToPGUUID(value string) (pgtype.UUID, error) {
-	parsedUUID, err := uuid.Parse(value)
-	if err != nil {
-		return pgtype.UUID{}, err
-	}
-
-	return pgtype.UUID{
-		Bytes: [16]byte(parsedUUID),
-		Valid: true,
-	}, nil
 }
