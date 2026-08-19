@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>P2P Call</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0d0d0d;
+  color: #f0f0f0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── top bar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f0f0f0;
+  letter-spacing: -0.2px;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: #1e1e1e;
+  color: #666;
+  letter-spacing: 0.2px;
+}
+
+.pill.live {
+  background: rgba(34,197,94,0.12);
+  color: #22c55e;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #333;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.dot.on {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.2);
+}
+
+.dot-label {
+  font-size: 12px;
+  color: #555;
+}
+
+/* ── main ── */
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── video area ── */
+.video-area {
+  flex: 1;
+  position: relative;
+  background: #080808;
+}
+
+.video-area video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* remote is full area */
+#remoteVideo {
+  width: 100%;
+  height: 100%;
+}
+
+/* local is picture-in-picture */
+.local-pip {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 140px;
+  aspect-ratio: 4/3;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #1e1e1e;
+  background: #111;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  transition: width 0.2s;
+}
+
+.local-pip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pip-label {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* empty state */
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #2a2a2a;
+  pointer-events: none;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #1e1e1e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: #333;
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.empty-state span {
+  font-size: 13px;
+  color: #333;
+}
+
+/* ── sidebar ── */
+.sidebar {
+  width: 260px;
+  border-left: 1px solid #1e1e1e;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.section {
+  padding: 18px 16px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #444;
+  margin-bottom: 12px;
+}
+
+/* inputs */
+.field {
+  margin-bottom: 10px;
+}
+
+.field label {
+  display: block;
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+input {
+  width: 100%;
+  padding: 8px 10px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 7px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus {
+  border-color: #404040;
+}
+
+input::placeholder {
+  color: #333;
+}
+
+/* buttons */
+.btn {
+  width: 100%;
+  padding: 9px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.btn:active { transform: scale(0.97); }
+.btn:hover { opacity: 0.85; }
+
+.btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.btn-connect {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid #2a2a2a;
+  margin-top: 4px;
+}
+
+.btn-call {
+  background: #22c55e;
+  color: #fff;
+  margin-top: 4px;
+}
+
+/* log area */
+.logs-section {
+  flex: 1;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.btn-clear {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #444;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.btn-clear:hover { color: #888; }
+
+#logs {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #444;
+}
+
+#logs::-webkit-scrollbar { width: 3px; }
+#logs::-webkit-scrollbar-track { background: transparent; }
+#logs::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.log-entry { display: flex; gap: 8px; }
+.log-time { color: #2e2e2e; flex-shrink: 0; }
+.log-msg { color: #555; }
+.log-msg.ok { color: #22c55e; }
+.log-msg.err { color: #ef4444; }
+
+/* ── mobile: bottom sheet ── */
+@media (max-width: 640px) {
+  body { overflow: auto; height: auto; }
+
+  .main { flex-direction: column; overflow: visible; }
+
+  .video-area {
+    aspect-ratio: 4/3;
+    position: relative;
+    height: auto;
+  }
+
+  .local-pip {
+    width: 90px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #1e1e1e;
+  }
+
+  .logs-section { min-height: 160px; }
+}
+</style>
+</head>
+<body>
+
+<!-- top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="app-name">Simple Call</span>
+    <span class="pill" id="statusPill">offline</span>
+  </div>
+  <div class="topbar-right">
+    <div class="dot" id="dot"></div>
+    <span class="dot-label" id="dotLabel">not connected</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- video -->
+  <div class="video-area">
+
+    <video id="remoteVideo" autoplay playsinline></video>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24"><path d="M15 10l4.55-2.1A1 1 0 0121 8.9v6.2a1 1 0 01-1.45.9L15 14"/><rect x="1" y="8" width="14" height="10" rx="2"/></svg>
+      </div>
+      <span>No call in progress</span>
+    </div>
+
+    <div class="local-pip">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <span class="pip-label">You</span>
+    </div>
+
+  </div>
+
+  <!-- sidebar -->
+  <div class="sidebar">
+
+    <div class="section">
+      <div class="section-label">Room</div>
+      <div class="field">
+        <label>Room ID</label>
+        <input id="roomId" placeholder="room-1" value="room-1">
+      </div>
+      <div class="field">
+        <label>Your ID</label>
+        <input id="userId" placeholder="krishna" value="krishna">
+      </div>
+      <button class="btn btn-connect" onclick="connect()">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Connect
+      </button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Call</div>
+      <div class="field">
+        <label>Call user</label>
+        <input id="targetId" placeholder="rohan" value="rohan">
+      </div>
+      <button class="btn btn-call" onclick="startCall()">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.59a16 16 0 006.29 6.29l1.12-1.12a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Call
+      </button>
+    </div>
+
+    <div class="logs-section">
+      <div class="logs-header">
+        <span class="section-label" style="margin:0">Log</span>
+        <button class="btn-clear" onclick="clearLogs()">clear</button>
+      </div>
+      <div id="logs"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let ws, localStream, peerConnections = {}, roomId, userId;
+
+function ts() {
+  return new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function log(msg, type='') {
+  const el = document.getElementById('logs');
+  const row = document.createElement('div');
+  row.className = 'log-entry';
+  row.innerHTML = `<span class="log-time">${ts()}</span><span class="log-msg ${type}">${msg}</span>`;
+  el.appendChild(row);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLogs() { document.getElementById('logs').innerHTML = ''; }
+
+function setStatus(on) {
+  document.getElementById('dot').className = 'dot' + (on ? ' on' : '');
+  document.getElementById('dotLabel').textContent = on ? 'connected' : 'not connected';
+  const pill = document.getElementById('statusPill');
+  pill.textContent = on ? 'live' : 'offline';
+  pill.className = 'pill' + (on ? ' live' : '');
+}
+
+function showRemote(show) {
+  document.getElementById('emptyState').style.display = show ? 'none' : 'flex';
+}
+
+async function connect() {
+  roomId = document.getElementById('roomId').value;
+  userId = document.getElementById('userId').value;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws?roomId=${encodeURIComponent(roomId)}&userId=${encodeURIComponent(userId)}`);
+  ws.onopen = async () => { log('connected', 'ok'); setStatus(true); await startLocalMedia(); };
+  ws.onmessage = async e => { const m = JSON.parse(e.data); log(`← ${m.type}`); await handleMessage(m); };
+  ws.onclose = () => { log('disconnected'); setStatus(false); };
+  ws.onerror = () => log('socket error', 'err');
+}
+
+async function startLocalMedia() {
+  localStream = await navigator.mediaDevices.getUserMedia({audio:true,video:true});
+  document.getElementById('localVideo').srcObject = localStream;
+  log('camera ready', 'ok');
+}
+
+function createPeerConnection(rid) {
+  if (peerConnections[rid]) return peerConnections[rid];
+  const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  peerConnections[rid] = pc;
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  pc.onicecandidate = e => {
+    if (!e.candidate) return;
+    sendSignal('rtc.ice', rid, {candidate:e.candidate.candidate,sdp_mid:e.candidate.sdpMid,sdp_mline_index:e.candidate.sdpMLineIndex});
+  };
+  pc.ontrack = e => {
+    const rv = document.getElementById('remoteVideo');
+    if (!rv.srcObject) { rv.srcObject = e.streams[0]; showRemote(true); log(`stream from ${rid}`, 'ok'); }
+  };
+  pc.onconnectionstatechange = () => {
+    log(`${rid}: ${pc.connectionState}`);
+    if (pc.connectionState === 'failed') { pc.close(); delete peerConnections[rid]; }
+    if (['disconnected','failed','closed'].includes(pc.connectionState)) { document.getElementById('remoteVideo').srcObject = null; showRemote(false); }
+  };
+  return pc;
+}
+
+async function startCall() {
+  const tid = document.getElementById('targetId').value;
+  if (!tid) { log('enter a target user', 'err'); return; }
+  const callId = crypto.randomUUID();
+  send('call.start',{call_id:callId},'',tid);
+  send('call.join',{call_id:callId},'',tid);
+  const pc = createPeerConnection(tid);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  sendSignal('rtc.offer',tid,{sdp:offer.sdp});
+  log(`offer → ${tid}`);
+}
+
+async function handleMessage(m) {
+  switch(m.type) {
+    case 'call.started': log('call created'); break;
+    case 'call.user_joined': log(`${m.from} joined`); break;
+    case 'rtc.offer': await handleOffer(m); break;
+    case 'rtc.answer': await handleAnswer(m); break;
+    case 'rtc.ice': await handleICE(m); break;
+    case 'call.user_left': handleUserLeft(m.from); break;
+    case 'message.send': log(`${m.from}: ${m.payload.content}`); break;
+    case 'error': log(m.payload.message, 'err'); break;
+  }
+}
+
+async function handleOffer(m) {
+  const pc = createPeerConnection(m.from);
+  await pc.setRemoteDescription({type:'offer',sdp:m.payload.sdp});
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  sendSignal('rtc.answer',m.from,{sdp:ans.sdp});
+  log(`answer → ${m.from}`);
+}
+
+async function handleAnswer(m) {
+  const pc = peerConnections[m.from];
+  if (!pc) { log('no peer connection', 'err'); return; }
+  await pc.setRemoteDescription({type:'answer',sdp:m.payload.sdp});
+  log(`answer ← ${m.from}`);
+}
+
+async function handleICE(m) {
+  const pc = peerConnections[m.from];
+  if (!pc) return;
+  try { await pc.addIceCandidate({candidate:m.payload.candidate,sdpMid:m.payload.sdp_mid,sdpMLineIndex:m.payload.sdp_mline_index}); }
+  catch(e) { console.error(e); }
+}
+
+function handleUserLeft(uid) {
+  const pc = peerConnections[uid];
+  if (pc) { pc.close(); delete peerConnections[uid]; }
+  document.getElementById('remoteVideo').srcObject = null;
+  showRemote(false);
+  log(`${uid} left`);
+}
+
+function sendSignal(type,tid,payload) { send(type,payload,roomId,tid); }
+function send(type,payload={},room=roomId,target='') {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { log('not connected','err'); return; }
+  ws.send(JSON.stringify({type,room_id:room,to:target,payload}));
+}
+</script>
+</body>
+</html>
