@@ -12,6 +12,7 @@ import (
 type contextKey string
 
 const UserIDKey contextKey = "userID"
+const UserNameKey contextKey = "userName"
 
 func Auth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -54,15 +55,22 @@ func Auth(jwtSecret string) func(http.Handler) http.Handler {
 				return
 			}
 
+			userName, ok := claims["userName"].(string)
+			if !ok || userName == "" {
+				response.Unauthorized(w, "AUTH_006", "invalid token subject", "missing userName in token")
+				return
+			}
 			// attach userID to request context
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, UserNameKey, userName)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// GetUserID extracts userID from context — use this in handlers
-func GetUserID(r *http.Request) (string, bool) {
+// GetUserDetails extracts userID and userName from context — use this in handlers
+func GetUserDetails(r *http.Request) (string, string, bool) {
 	userID, ok := r.Context().Value(UserIDKey).(string)
-	return userID, ok
+	userName, ok := r.Context().Value(UserNameKey).(string)
+	return userID, userName, ok
 }

@@ -21,6 +21,7 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 
 	authHandler := handler.NewAuthHandler(store, cfg.JWT_SECRET)
 	channelHandler := handler.NewChannelHandler(store)
+	userHandler := handler.NewUserHandler(store)
 	msgHandler := handler.NewMessageHandler(store, h)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +37,11 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cfg.JWT_SECRET))
 			r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
-				hub.ServeWs(h, w, r)
+				hub.ServeWs(h, store, w, r)
+			})
+
+			r.Route("/user", func(r chi.Router) {
+				r.Get("/", userHandler.GetMe)
 			})
 			r.Route("/channels", func(r chi.Router) {
 				//create channel

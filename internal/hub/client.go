@@ -3,12 +3,13 @@ package hub
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/call"
 	"github.com/KrishnaGrg1/slack-clone/internal/middleware"
+	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/gorilla/websocket"
 )
 
@@ -41,10 +42,10 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	hub *Hub
-
-	senderID string
-	roomID   string
+	hub        *Hub
+	senderName string
+	senderID   string
+	roomID     string
 	// The websocket connection.
 	conn *websocket.Conn
 
@@ -66,31 +67,93 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.conn.ReadMessage()
+		_, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		fmt.Println("message", string(message))
-
-		var payload struct {
-			Content  string `json:"content"`
-			ParentID string `json:"parent_id,omitempty"`
+		// Step 1: peek at the type field only
+		var peek struct {
+			Type string `json:"type"`
 		}
-		if err := json.Unmarshal(message, &payload); err != nil {
-			log.Printf("invalid message format: %v", err)
+		if err := json.Unmarshal(data, &peek); err != nil {
+			log.Println("invalid frame:", err)
 			continue
 		}
+		switch peek.Type {
 
-		c.hub.broadcast <- Message{
-			SenderID: c.senderID,
-			Content:  payload.Content,
-			RoomID:   c.roomID,
-			ParentID: payload.ParentID,
+		// chat
+		case TypeMessageSend:
+			data = bytes.TrimSpace(bytes.Replace(data, newline, space, -1))
+			var payload struct {
+				Content  string `json:"content"`
+				ParentID string `json:"parent_id,omitempty"`
+			}
+			if err := json.Unmarshal(data, &payload); err != nil {
+				log.Printf("invalid message format: %v", err)
+				continue
+			}
+
+			c.hub.broadcast <- Message{
+				Type:     "message.new",
+				SenderID: c.senderID,
+				Content:  payload.Content,
+				RoomID:   c.roomID,
+				ParentID: payload.ParentID,
+			}
+
+		//Typing
+		case TypeTypingStart:
+			payload, _ := json.Marshal(map[string]string{
+				"type":    TypeTypingIndicator,
+				"user_id": c.senderID,
+				"room_id": c.roomID,
+			})
+			//need to notify to all users who are in the room
+			c.hub.NotifyRoom(c.roomID, payload)
+
+		// start call
+		case TypeCallStart:
+			var msg InboundCallMsg
+			if err := json.Unmarshal(data, &msg); err != nil {
+				continue
+			}
+			//start call
+			c.handleCallStart(msg)
+
+		//join call
+		case TypeCallJoin:
+			var msg InboundCallMsg
+			if err := json.Unmarshal(data, &msg); err != nil {
+				continue
+			}
+			// join the call as well as notify the user who are in the call also
+			c.handleCallJoin(msg)
+
+		// leave call
+		case TypeCallLeave:
+			var msg InboundCallMsg
+			if err := json.Unmarshal(data, &msg); err != nil {
+				continue
+			}
+			// leave call
+			c.handleCallLeave(msg)
+
+		//-webrtc signaling-
+		case TypeRTCOffer, TypeRTCIce, TypeRTCAnswer:
+			var sig SignalMsg
+			if err := json.Unmarshal(data, &sig); err != nil {
+				continue
+			}
+			sig.FromUserID = c.senderID
+			c.hub.EnqueueSignal(sig)
+		default:
+			log.Printf("unknown message type: %s", peek.Type)
+
 		}
+
 	}
 }
 
@@ -145,8 +208,8 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
-	userId, ok := middleware.GetUserID(r)
+func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Request) {
+	userId, userName, ok := middleware.GetUserDetails(r)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -162,7 +225,7 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, senderID: userId, roomID: roomID, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, senderID: userId, senderName: userName, roomID: roomID, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
@@ -170,4 +233,99 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	go client.writePump()
 	go client.readPump()
 	// defer conn.Close()
+}
+
+// handleCallStart creates a new call room and notifies channel members
+func (c *Client) handleCallStart(msg InboundCallMsg) {
+	call, existing, isCreated := c.hub.callManager.StartCall(c.senderID, c.senderName, c.roomID)
+
+	if isCreated {
+		// tell initiator: here is your call ID
+		event := OutboundCallEvent{
+			Type:      TypeCallStarted,
+			CallID:    call.ID,
+			ChannelID: msg.ChannelID,
+			ThreadID:  msg.ThreadID,
+		}
+		payload, _ := json.Marshal(event)
+		c.hub.SendToUser(c.senderID, payload)
+
+		// notify everyone else in the channel: incoming call
+
+		incoming := OutboundCallEvent{
+			Type:      TypeMessageNew,
+			CallID:    call.ID,
+			ChannelID: msg.ChannelID,
+			ThreadID:  msg.ThreadID,
+			UserID:    call.InitiatorID,
+		}
+		inPayload, _ := json.Marshal(incoming)
+		c.hub.NotifyRoom(call.RoomID, inPayload)
+	} else {
+		c.sendExistingPeers(msg.CallID, existing)
+	}
+}
+
+func (c *Client) handleCallJoin(
+	msg InboundCallMsg,
+) {
+	call, existing, ok := c.hub.callManager.JoinCall(msg.CallID, c.senderID, c.senderName)
+	if !ok {
+		log.Fatalf("failed joining call by=%s callID=%s", c.senderName, msg.CallID)
+		return
+	}
+	// send to ownself who who are in the call
+	c.sendExistingPeers(call.ID, existing)
+
+	// also notify to all users who are in the call
+
+	//this is the payload to be send
+	peerJoined, _ := json.Marshal(OutboundCallEvent{
+		Type:   TypeCallPeerJoined,
+		CallID: msg.CallID,
+		UserID: c.senderID,
+	})
+	//finally send the data:{user Have joined the call} to each users of the call
+	for _, peer := range existing {
+		c.hub.SendToUser(peer.ID, peerJoined)
+	}
+}
+
+// handleCallLeave removes this peer and notifies remaining peers
+func (c *Client) handleCallLeave(msg InboundCallMsg) {
+	departure, ok := c.hub.callManager.LeaveCall(c.senderID, msg.CallID)
+	if !ok {
+		log.Fatalf("failed to leave call")
+		return
+	}
+
+	event := OutboundCallEvent{
+		Type:   TypeCallPeerLeft,
+		CallID: msg.CallID,
+		UserID: c.senderID,
+	}
+	if departure.Ended {
+		event.Type = TypeCallEnded
+	}
+	payload, _ := json.Marshal(event)
+
+	for _, peerID := range departure.Remaining {
+		c.hub.SendToUser(peerID, payload)
+	}
+
+}
+
+// sendExistingPeers tells the current client who is already in the call
+func (c *Client) sendExistingPeers(callID string, existing []call.Participant) {
+	ids := make([]string, len(existing))
+
+	for i, k := range existing {
+		ids[i] = k.ID
+	}
+	payload, _ := json.Marshal(OutboundCallEvent{
+		Type:          TypeCallJoin,
+		CallID:        callID,
+		ExistingPeers: ids,
+	})
+	c.hub.SendToUser(c.senderID, payload)
 }

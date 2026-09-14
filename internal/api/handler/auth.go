@@ -65,11 +65,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		response.Conflict(w, "VALIDATION_004", "registration failed", "username or email already exists")
 		return
 	}
-	token, err := h.generateJWT(newUser.ID.String())
+	token, err := h.generateJWT(newUser.ID.String(), newUser.Username)
 	if err != nil {
 		response.InternalServerError(w, "VALIDATION_005", "failed to generate token", "token creation failed")
 		return
 	}
+	secure := r.TLS != nil
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+	})
 	response.Created(w, "registration successful", authResponse{
 		Token: token,
 		User: authUserResponse{
@@ -101,11 +111,21 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		response.Unauthorized(w, "AUTH_001", "invalid credentials", "invalid email or password")
 		return
 	}
-	token, err := h.generateJWT(existingUser.ID.String())
+	token, err := h.generateJWT(existingUser.ID.String(), existingUser.Username)
 	if err != nil {
 		response.InternalServerError(w, "AUTH_002", "failed to generate token", "token creation failed")
 		return
 	}
+	secure := r.TLS != nil
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int((7 * 24 * time.Hour).Seconds()),
+	})
 	response.Success(w, http.StatusOK, "login successful", authResponse{
 		Token: token,
 		User: authUserResponse{
@@ -116,11 +136,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *AuthHandler) generateJWT(userID string) (string, error) {
+func (h *AuthHandler) generateJWT(userID string, userName string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID,
-		"exp": time.Now().Add(15 * time.Minute).Unix(),
-		"iat": time.Now().Unix(),
+		"sub":      userID,
+		"userName": userName,
+		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"iat":      time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(h.jwtSecret))

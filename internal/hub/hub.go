@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/call"
 	"github.com/KrishnaGrg1/slack-clone/internal/db"
 	"github.com/KrishnaGrg1/slack-clone/internal/dsa"
 	"github.com/redis/go-redis/v9"
@@ -16,19 +17,14 @@ const channel = "slack:clone:checks"
 // historyCapacity is the number of messages kept in memory per room.
 const historyCapacity = 100
 
-type Message struct {
-	SenderID string `json:"sender_id"`
-	RoomID   string `json:"room_id"`
-	Content  string `json:"content"`
-	ParentID string `json:"parent_id,omitempty"` // ← add
-}
-
 type Hub struct {
 	// Registered clients grouped by room.
 	rooms map[string]map[*Client]bool
 
 	//history message
 	history map[string]*dsa.RingBuffer[Message]
+
+	users map[string]*Client // ← userID → client for signaling
 
 	// Inbound messages from the clients.
 	broadcast chan Message
@@ -38,8 +34,13 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
-	redis      *redis.Client
-	writer     *db.DBWriter // ← add
+
+	signal chan SignalMsg // ← WebRTC forwarding
+
+	redis  *redis.Client
+	writer *db.DBWriter // ← add
+
+	callManager *call.CallManager
 
 	// historyMu guards the history map (read in GetHistory, written in Run).
 	historyMu sync.RWMutex
@@ -48,16 +49,18 @@ type Hub struct {
 func NewHub(rdb *redis.Client, writer *db.DBWriter) *Hub {
 
 	return &Hub{
-		broadcast:  make(chan Message),
-		history:    make(map[string]*dsa.RingBuffer[Message]),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		rooms:      make(map[string]map[*Client]bool),
-		redis:      rdb,
-		writer:     writer,
+		rooms:       make(map[string]map[*Client]bool),
+		history:     make(map[string]*dsa.RingBuffer[Message]),
+		users:       make(map[string]*Client),
+		broadcast:   make(chan Message),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		signal:      make(chan SignalMsg, 256),
+		redis:       rdb,
+		writer:      writer,
+		callManager: call.NewCallManager(),
 	}
 }
-
 func (h *Hub) Run() {
 	for {
 		select {
@@ -70,7 +73,8 @@ func (h *Hub) Run() {
 				h.rooms[client.roomID] = make(map[*Client]bool)
 			}
 			h.rooms[client.roomID][client] = true
-			log.Printf("%s joined room %s", client.senderID, client.roomID)
+			h.users[client.senderID] = client
+			log.Printf("%s joined room %s", client.senderName, client.roomID)
 
 		case client := <-h.unregister:
 			// if room, ok := h.rooms[client.roomID]; ok {
@@ -91,6 +95,7 @@ func (h *Hub) Run() {
 					}
 				}
 			}
+			delete(h.users, client.senderID)
 		case message := <-h.broadcast:
 			room, ok := h.rooms[message.RoomID]
 			if !ok {
@@ -133,7 +138,21 @@ func (h *Hub) Run() {
 				ParentID:  message.ParentID, // add ParentID to Message struct too
 			})
 
+		case sig := <-h.signal:
+			// forward to target peer — Go never reads the SDP/ICE content
+			if target, ok := h.users[sig.TargetUserID]; ok {
+				sig.FromUserID = sig.TargetUserID // fixed below
+				payload, err := json.Marshal(sig)
+				if err != nil {
+					continue
+				}
+				select {
+				case target.send <- payload:
+				default:
+				}
+			}
 		}
+
 	}
 }
 
@@ -176,4 +195,38 @@ func (h *Hub) GetHistory(roomID string) []Message {
 		return nil
 	}
 	return buf.Slice()
+}
+
+// EnqueueSignal is called from readPump goroutine — thread safe
+func (h *Hub) EnqueueSignal(signal SignalMsg) {
+	select {
+	case h.signal <- signal:
+	default:
+		log.Println("signal queue full, dropping")
+	}
+}
+
+// NotifyRoom sends an event to everyone in a channel room
+func (h *Hub) NotifyRoom(roomID string, payload []byte) {
+	room, ok := h.rooms[roomID]
+	if !ok {
+		log.Fatalf("there is no room=%s", roomID)
+		return
+	}
+	for client := range room {
+		select {
+		case client.send <- payload:
+		default:
+		}
+	}
+}
+
+// SendToUser sends directly to one user by ID
+func (h *Hub) SendToUser(userID string, payload []byte) {
+	if client, ok := h.users[userID]; ok {
+		select {
+		case client.send <- payload:
+		default:
+		}
+	}
 }

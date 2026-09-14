@@ -29,7 +29,7 @@ type CreateChannelInput struct {
 
 // POST /channels
 func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserID(r)
+	userID, _, ok := middleware.GetUserDetails(r)
 	if !ok {
 		response.Error(
 			w,
@@ -139,7 +139,7 @@ func (h *ChannelHandler) GetChannels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserID(r)
+	userID, _, ok := middleware.GetUserDetails(r)
 	if !ok {
 		response.Error(
 			w,
@@ -244,7 +244,7 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserID(r)
+	userID, _, ok := middleware.GetUserDetails(r)
 	if !ok {
 		response.Error(
 			w,

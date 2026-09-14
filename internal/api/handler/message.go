@@ -94,7 +94,7 @@ func (h *MessageHandler) GetThread(w http.ResponseWriter, r *http.Request) {
 
 // PATCH /messages/:id
 func (h *MessageHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserID(r)
+	userID, _, ok := middleware.GetUserDetails(r)
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, "AUTH_001", "authentication required", "user ID not found in request context")
 		return
@@ -140,7 +140,7 @@ func (h *MessageHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /messages/:id
 func (h *MessageHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserID(r)
+	userID, _, ok := middleware.GetUserDetails(r)
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, "AUTH_001", "authentication required", "user ID not found in request context")
 		return
