@@ -1,5 +1,4 @@
 -- +goose Up
-
 CREATE TABLE calls (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     channel_id    UUID REFERENCES channels(id),
@@ -28,7 +27,6 @@ CREATE TABLE call_summaries (
 );
 
 -- +goose Down
-
-DROP TABLE IF EXISTS call_summaries;
-DROP TABLE IF EXISTS call_participants;
-DROP TABLE IF EXISTS calls;
+DROP TABLE IF EXISTS call_summaries CASCADE;
+DROP TABLE IF EXISTS call_participants CASCADE;
+DROP TABLE IF EXISTS calls CASCADE;

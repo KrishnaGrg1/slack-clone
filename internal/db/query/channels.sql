@@ -1,7 +1,7 @@
 
 -- name: CreateChannel :one
-INSERT INTO channels(name,is_private,created_by)
-VALUES ($1,$2,$3)
+INSERT INTO channels(name,channel_type,created_by,workspace_id)
+VALUES ($1,$2,$3,$4)
 RETURNING *;
 
 -- name: GetChannelById :one
@@ -36,3 +36,16 @@ SELECT EXISTS (
     WHERE channel_id = $1
       AND user_id = $2
 );
+
+
+-- name: GetChannelsByWorkspace :many
+SELECT c.* FROM channels c
+WHERE c.workspace_id = $1
+AND (
+    c.channel_type = 'public'
+    OR EXISTS (
+        SELECT 1 FROM channel_members cm
+        WHERE cm.channel_id = c.id AND cm.user_id = $2
+    )
+)
+ORDER BY c.created_at ASC;

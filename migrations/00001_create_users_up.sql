@@ -1,5 +1,4 @@
 -- +goose Up
-
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE users (
@@ -12,5 +11,4 @@ CREATE TABLE users (
 );
 
 -- +goose Down
-
 DROP TABLE IF EXISTS users CASCADE;

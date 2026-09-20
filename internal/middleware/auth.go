@@ -17,20 +17,7 @@ const UserNameKey contextKey = "userName"
 func Auth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// get token from Authorization: Bearer <token>
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				response.Unauthorized(w, "AUTH_001", "missing token", "authorization header required")
-				return
-			}
-
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				response.Unauthorized(w, "AUTH_002", "invalid token format", "use: Bearer <token>")
-				return
-			}
-
-			tokenStr := parts[1]
+			tokenStr := extractTokenFromHeader(r)
 
 			token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -73,4 +60,22 @@ func GetUserDetails(r *http.Request) (string, string, bool) {
 	userID, ok := r.Context().Value(UserIDKey).(string)
 	userName, ok := r.Context().Value(UserNameKey).(string)
 	return userID, userName, ok
+}
+
+// extract token from middleware
+func extractTokenFromHeader(r *http.Request) string {
+	if cookie, err := r.Cookie("token"); err == nil {
+		if cookie.Value != "" {
+			return cookie.Value
+		}
+	}
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			return parts[1]
+		}
+	}
+	return ""
+
 }

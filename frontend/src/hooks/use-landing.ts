@@ -1,6 +1,6 @@
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
-import { useEffect } from "react"
+import { useEffect } from 'react'
 
 export function useScrollReveal() {
   useEffect(() => {

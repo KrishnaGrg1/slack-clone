@@ -1,5 +1,6 @@
 import { Card } from '#/components/ui/card'
 import { BENEFITS } from '../data'
+
 export function BenefitsSection() {
   return (
     <section id="benefits" className="py-24 px-6 max-w-5xl mx-auto">

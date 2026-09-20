@@ -11,20 +11,27 @@ import (
 )
 
 type Querier interface {
+	AddWorkspaceMember(ctx context.Context, arg AddWorkspaceMemberParams) error
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
 	DeleteMessage(ctx context.Context, arg DeleteMessageParams) error
 	EditMessage(ctx context.Context, arg EditMessageParams) (Message, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
 	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
 	GetChannelMessages(ctx context.Context, arg GetChannelMessagesParams) ([]GetChannelMessagesRow, error)
 	GetChannels(ctx context.Context) ([]Channel, error)
+	GetChannelsByWorkspace(ctx context.Context, arg GetChannelsByWorkspaceParams) ([]Channel, error)
 	GetMessageByID(ctx context.Context, id pgtype.UUID) (Message, error)
 	GetThreadMessages(ctx context.Context, parentID pgtype.UUID) ([]GetThreadMessagesRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
+	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
+	GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]GetWorkspaceMembersRow, error)
+	GetWorkspacesByUser(ctx context.Context, userID pgtype.UUID) ([]Workspace, error)
 	IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error)
+	IsWorkspaceMember(ctx context.Context, arg IsWorkspaceMemberParams) (bool, error)
 	JoinChannel(ctx context.Context, arg JoinChannelParams) error
 	LeaveChannel(ctx context.Context, arg LeaveChannelParams) error
 }

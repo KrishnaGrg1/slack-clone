@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
 	"github.com/KrishnaGrg1/slack-clone/internal/middleware"
@@ -9,40 +10,55 @@ import (
 	"github.com/KrishnaGrg1/slack-clone/internal/response"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/go-chi/chi"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// ChannelType is the allowed set of channel visibility values.
+type ChannelType string
+
+const (
+	ChannelTypePublic  ChannelType = "public"
+	ChannelTypePrivate ChannelType = "private"
+)
+
+// IsValid reports whether c is a recognised ChannelType.
+func (c ChannelType) IsValid() bool {
+	return c == ChannelTypePublic || c == ChannelTypePrivate
+}
+
+// CreateChannelInput is the request body for POST /channels.
+type CreateChannelInput struct {
+	Name        string      `json:"name"`
+	ChannelType ChannelType `json:"channel_type"`
+}
+
+// ChannelHandler holds the dependencies for all channel-related routes.
 type ChannelHandler struct {
 	store *store.Store
 }
 
+// NewChannelHandler constructs a ChannelHandler.
 func NewChannelHandler(store *store.Store) *ChannelHandler {
-	return &ChannelHandler{
-		store: store,
-	}
+	return &ChannelHandler{store: store}
 }
 
-type CreateChannelInput struct {
-	Name      string `json:"name"`
-	IsPrivate bool   `json:"is_private"`
-}
-
-// POST /channels
+// CreateChannel handles POST /api/v1/workspaces/{workspaceID}/channels.
+//
+// The WorkspaceAuth middleware has already verified that the caller is an
+// authenticated member of the workspace and injected both UUIDs into ctx.
 func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
-	userID, _, ok := middleware.GetUserDetails(r)
-	if !ok {
-		response.Error(
-			w,
-			http.StatusUnauthorized,
-			"unauthorized",
-			"AUTH_001",
-			"invalid user",
-		)
-		return
-	}
+
+	// --------------------------------------------------
+	// 1. Read caller identity from context (set by WorkspaceAuth)
+	// --------------------------------------------------
+
+	workspaceUUID, _ := middleware.WorkspaceUUIDFromCtx(r.Context())
+	userUUID, _ := middleware.UserUUIDFromCtx(r.Context())
+
+	// --------------------------------------------------
+	// 2. Decode and validate request body
+	// --------------------------------------------------
 
 	var req CreateChannelInput
-
 	if err := response.Read(r, &req); err != nil {
 		response.BadRequest(
 			w,
@@ -53,6 +69,7 @@ func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		response.BadRequest(
 			w,
@@ -63,134 +80,157 @@ func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	creatorUUID, err := pgutil.ParseToPGUUID(userID)
-	if err != nil {
-		response.Error(
+	if !req.ChannelType.IsValid() {
+		response.BadRequest(
 			w,
-			http.StatusUnauthorized,
-			"invalid user id",
-			"AUTH_002",
-			"invalid user ID",
+			"CH_003",
+			"invalid channel type",
+			`channel type must be "public" or "private"`,
 		)
 		return
 	}
 
+	// --------------------------------------------------
+	// 3. Persist channel
+	// --------------------------------------------------
+
 	channel, err := h.store.Queries.CreateChannel(
 		r.Context(),
 		db.CreateChannelParams{
-			Name:      req.Name,
-			IsPrivate: pgtype.Bool{Bool: req.IsPrivate, Valid: true},
-			CreatedBy: creatorUUID,
+			Name:        req.Name,
+			ChannelType: string(req.ChannelType),
+			CreatedBy:   userUUID,
+			WorkspaceID: workspaceUUID,
 		},
 	)
 	if err != nil {
 		response.InternalServerError(
 			w,
-			"CH_003",
+			"CH_004",
 			"failed to create channel",
 			err.Error(),
 		)
 		return
 	}
 
-	// Creator automatically joins the channel.
+	// --------------------------------------------------
+	// 4. Auto-join creator
+	// --------------------------------------------------
+
 	if err := h.store.Queries.JoinChannel(
 		r.Context(),
 		db.JoinChannelParams{
 			ChannelID: channel.ID,
-			UserID:    creatorUUID,
+			UserID:    userUUID,
 		},
 	); err != nil {
 		response.InternalServerError(
 			w,
-			"CH_004",
-			"failed to join channel",
-			err.Error(),
-		)
-		return
-	}
-
-	response.Success(
-		w,
-		http.StatusCreated,
-		"channel created",
-		channel,
-	)
-}
-
-func (h *ChannelHandler) GetChannels(w http.ResponseWriter, r *http.Request) {
-	channels, err := h.store.Queries.GetChannels(r.Context())
-	if err != nil {
-		response.InternalServerError(
-			w,
 			"CH_005",
-			"failed to fetch channels",
+			"channel created but failed to add creator as member",
 			err.Error(),
 		)
 		return
 	}
 
-	response.Success(
-		w,
-		http.StatusOK,
-		"channels fetched",
-		channels,
-	)
+	response.Success(w, http.StatusCreated, "channel created", channel)
 }
 
-func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
-	userID, _, ok := middleware.GetUserDetails(r)
-	if !ok {
-		response.Error(
-			w,
-			http.StatusUnauthorized,
-			"unauthorized",
-			"AUTH_001",
-			"invalid user",
-		)
-		return
-	}
+// GetChannels handles GET /api/v1/workspaces/{workspaceID}/channels.
+//
+// Returns all channels visible within the workspace.
+// WorkspaceAuth guarantees the caller is a workspace member.
+func (h *ChannelHandler) GetChannels(w http.ResponseWriter, r *http.Request) {
+	workspaceUUID, _ := middleware.WorkspaceUUIDFromCtx(r.Context())
+	userUUID, _ := middleware.UserUUIDFromCtx(r.Context())
 
-	channelID := chi.URLParam(r, "id")
-
-	userUUID, err := pgutil.ParseToPGUUID(userID)
+	channels, err := h.store.Queries.GetChannelsByWorkspace(r.Context(), db.GetChannelsByWorkspaceParams{
+		WorkspaceID: workspaceUUID,
+		UserID:      userUUID,
+	})
 	if err != nil {
-		response.Error(
-			w,
-			http.StatusUnauthorized,
-			"invalid user id",
-			"AUTH_002",
-			"invalid user ID",
-		)
+		response.InternalServerError(w, "CH_006", "failed to fetch channels", err.Error())
 		return
 	}
 
-	channelUUID, err := pgutil.ParseToPGUUID(channelID)
+	response.Success(w, http.StatusOK, "channels fetched", channels)
+}
+
+// GetChannel handles GET /api/v1/workspaces/{workspaceID}/channels/{id}.
+//
+// Returns a single channel together with its member list.
+func (h *ChannelHandler) GetChannel(w http.ResponseWriter, r *http.Request) {
+
+	channelUUID, err := pgutil.ParseToPGUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		response.BadRequest(
 			w,
-			"CH_006",
-			"invalid channel id",
+			"CH_007",
+			"invalid channel ID",
 			"channel ID must be a valid UUID",
 		)
 		return
 	}
 
-	channel, err := h.store.Queries.GetChannelById(
-		r.Context(),
-		channelUUID,
-	)
+	channel, err := h.store.Queries.GetChannelById(r.Context(), channelUUID)
 	if err != nil {
 		response.Error(
 			w,
 			http.StatusNotFound,
 			"channel not found",
-			"CH_007",
-			"No channel with that ID",
+			"CH_008",
+			"no channel with that ID",
 		)
 		return
 	}
 
+	members, err := h.store.Queries.GetChannelMembers(r.Context(), channelUUID)
+	if err != nil {
+		response.InternalServerError(
+			w,
+			"CH_009",
+			"failed to fetch channel members",
+			err.Error(),
+		)
+		return
+	}
+
+	response.Success(w, http.StatusOK, "channel fetched", map[string]any{
+		"channel":         channel,
+		"channel_members": members,
+	})
+}
+
+// JoinChannel handles POST /api/v1/workspaces/{workspaceID}/channels/{id}/join.
+func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
+
+	userUUID, _ := middleware.UserUUIDFromCtx(r.Context())
+
+	channelUUID, err := pgutil.ParseToPGUUID(chi.URLParam(r, "id"))
+	if err != nil {
+		response.BadRequest(
+			w,
+			"CH_010",
+			"invalid channel ID",
+			"channel ID must be a valid UUID",
+		)
+		return
+	}
+
+	// Confirm channel exists
+	channel, err := h.store.Queries.GetChannelById(r.Context(), channelUUID)
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusNotFound,
+			"channel not found",
+			"CH_011",
+			"no channel with that ID",
+		)
+		return
+	}
+
+	// Guard duplicate membership
 	isMember, err := h.store.Queries.IsChannelMember(
 		r.Context(),
 		db.IsChannelMemberParams{
@@ -201,7 +241,7 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.InternalServerError(
 			w,
-			"CH_008",
+			"CH_012",
 			"failed to check channel membership",
 			err.Error(),
 		)
@@ -213,7 +253,7 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 			w,
 			http.StatusConflict,
 			"already a channel member",
-			"CH_009",
+			"CH_013",
 			"user is already a member of this channel",
 		)
 		return
@@ -228,74 +268,45 @@ func (h *ChannelHandler) JoinChannel(w http.ResponseWriter, r *http.Request) {
 	); err != nil {
 		response.InternalServerError(
 			w,
-			"CH_010",
+			"CH_014",
 			"failed to join channel",
 			err.Error(),
 		)
 		return
 	}
 
-	response.Success(
-		w,
-		http.StatusOK,
-		"joined channel",
-		channel,
-	)
+	response.Success(w, http.StatusOK, "joined channel", channel)
 }
 
+// LeaveChannel handles POST /api/v1/workspaces/{workspaceID}/channels/{id}/leave.
 func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
-	userID, _, ok := middleware.GetUserDetails(r)
-	if !ok {
-		response.Error(
-			w,
-			http.StatusUnauthorized,
-			"unauthorized",
-			"AUTH_001",
-			"invalid user",
-		)
-		return
-	}
 
-	channelID := chi.URLParam(r, "id")
+	userUUID, _ := middleware.UserUUIDFromCtx(r.Context())
 
-	userUUID, err := pgutil.ParseToPGUUID(userID)
-	if err != nil {
-		response.Error(
-			w,
-			http.StatusUnauthorized,
-			"invalid user id",
-			"AUTH_002",
-			"invalid user ID",
-		)
-		return
-	}
-
-	channelUUID, err := pgutil.ParseToPGUUID(channelID)
+	channelUUID, err := pgutil.ParseToPGUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		response.BadRequest(
 			w,
-			"CH_009",
-			"invalid channel id",
+			"CH_015",
+			"invalid channel ID",
 			"channel ID must be a valid UUID",
 		)
 		return
 	}
 
-	_, err = h.store.Queries.GetChannelById(
-		r.Context(),
-		channelUUID,
-	)
-	if err != nil {
+	// Confirm channel exists
+	if _, err := h.store.Queries.GetChannelById(r.Context(), channelUUID); err != nil {
 		response.Error(
 			w,
 			http.StatusNotFound,
 			"channel not found",
-			"CH_010",
-			"No channel with that ID",
+			"CH_016",
+			"no channel with that ID",
 		)
 		return
 	}
 
+	// Guard: must be a member to leave
 	isMember, err := h.store.Queries.IsChannelMember(
 		r.Context(),
 		db.IsChannelMemberParams{
@@ -306,7 +317,7 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.InternalServerError(
 			w,
-			"CH_011",
+			"CH_017",
 			"failed to check channel membership",
 			err.Error(),
 		)
@@ -318,7 +329,7 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 			w,
 			http.StatusConflict,
 			"not a channel member",
-			"CH_012",
+			"CH_018",
 			"user must be a member of the channel to leave",
 		)
 		return
@@ -333,67 +344,12 @@ func (h *ChannelHandler) LeaveChannel(w http.ResponseWriter, r *http.Request) {
 	); err != nil {
 		response.InternalServerError(
 			w,
-			"CH_013",
+			"CH_019",
 			"failed to leave channel",
 			err.Error(),
 		)
 		return
 	}
 
-	response.Success(
-		w,
-		http.StatusOK,
-		"left channel",
-		nil,
-	)
-}
-
-func (h *ChannelHandler) GetChannel(w http.ResponseWriter, r *http.Request) {
-	channelID := chi.URLParam(r, "id")
-
-	channelUUID, err := pgutil.ParseToPGUUID(channelID)
-	if err != nil {
-		response.BadRequest(
-			w,
-			"CH_013",
-			"invalid channel id",
-			"channel ID must be a valid UUID",
-		)
-		return
-	}
-
-	channel, err := h.store.Queries.GetChannelById(
-		r.Context(),
-		channelUUID,
-	)
-	if err != nil {
-		response.Error(
-			w,
-			http.StatusNotFound,
-			"channel not found",
-			"CH_014",
-			"No channel with that ID",
-		)
-		return
-	}
-
-	channelMembers, err := h.store.Queries.GetChannelMembers(
-		r.Context(),
-		channelUUID,
-	)
-	if err != nil {
-		response.Error(
-			w,
-			http.StatusInternalServerError,
-			"failed to get channel members",
-			"CH_015",
-			err.Error(),
-		)
-		return
-	}
-
-	response.Success(w, http.StatusOK, "channel fetched", map[string]any{
-		"channel":         channel,
-		"channel_members": channelMembers,
-	})
+	response.Success(w, http.StatusOK, "left channel", nil)
 }

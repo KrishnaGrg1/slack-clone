@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
 } from '#/components/ui/accordion'
 import { FAQ_ITEMS } from '../data'
+
 export function FaqSection() {
   return (
     <section id="faq" className="py-24 px-6 max-w-3xl mx-auto">

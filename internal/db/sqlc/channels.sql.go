@@ -12,24 +12,31 @@ import (
 )
 
 const createChannel = `-- name: CreateChannel :one
-INSERT INTO channels(name,is_private,created_by)
-VALUES ($1,$2,$3)
-RETURNING id, name, is_private, created_by, created_at
+INSERT INTO channels(name,channel_type,created_by,workspace_id)
+VALUES ($1,$2,$3,$4)
+RETURNING id, workspace_id, name, channel_type, created_by, created_at
 `
 
 type CreateChannelParams struct {
-	Name      string      `json:"name"`
-	IsPrivate pgtype.Bool `json:"is_private"`
-	CreatedBy pgtype.UUID `json:"created_by"`
+	Name        string      `json:"name"`
+	ChannelType string      `json:"channel_type"`
+	CreatedBy   pgtype.UUID `json:"created_by"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
 }
 
 func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error) {
-	row := q.db.QueryRow(ctx, createChannel, arg.Name, arg.IsPrivate, arg.CreatedBy)
+	row := q.db.QueryRow(ctx, createChannel,
+		arg.Name,
+		arg.ChannelType,
+		arg.CreatedBy,
+		arg.WorkspaceID,
+	)
 	var i Channel
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.Name,
-		&i.IsPrivate,
+		&i.ChannelType,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -37,7 +44,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 }
 
 const getChannelById = `-- name: GetChannelById :one
-SELECT id, name, is_private, created_by, created_at FROM channels
+SELECT id, workspace_id, name, channel_type, created_by, created_at FROM channels
 WHERE id = $1 
 LIMIT 1
 `
@@ -47,8 +54,9 @@ func (q *Queries) GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, 
 	var i Channel
 	err := row.Scan(
 		&i.ID,
+		&i.WorkspaceID,
 		&i.Name,
-		&i.IsPrivate,
+		&i.ChannelType,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -95,7 +103,7 @@ func (q *Queries) GetChannelMembers(ctx context.Context, channelID pgtype.UUID) 
 }
 
 const getChannels = `-- name: GetChannels :many
-SELECT id, name, is_private, created_by, created_at FROM channels
+SELECT id, workspace_id, name, channel_type, created_by, created_at FROM channels
 WHERE is_private = false
 `
 
@@ -110,8 +118,54 @@ func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
 		var i Channel
 		if err := rows.Scan(
 			&i.ID,
+			&i.WorkspaceID,
 			&i.Name,
-			&i.IsPrivate,
+			&i.ChannelType,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getChannelsByWorkspace = `-- name: GetChannelsByWorkspace :many
+SELECT c.id, c.workspace_id, c.name, c.channel_type, c.created_by, c.created_at FROM channels c
+WHERE c.workspace_id = $1
+AND (
+    c.channel_type = 'public'
+    OR EXISTS (
+        SELECT 1 FROM channel_members cm
+        WHERE cm.channel_id = c.id AND cm.user_id = $2
+    )
+)
+ORDER BY c.created_at ASC
+`
+
+type GetChannelsByWorkspaceParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	UserID      pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetChannelsByWorkspace(ctx context.Context, arg GetChannelsByWorkspaceParams) ([]Channel, error) {
+	rows, err := q.db.Query(ctx, getChannelsByWorkspace, arg.WorkspaceID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.ChannelType,
 			&i.CreatedBy,
 			&i.CreatedAt,
 		); err != nil {

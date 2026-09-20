@@ -1,5 +1,6 @@
 import { useTaglineReveal } from '#/hooks/use-landing'
 import { useRef } from 'react'
+
 export function TaglineSection() {
   const ref = useRef<HTMLDivElement>(null)
   useTaglineReveal(ref)

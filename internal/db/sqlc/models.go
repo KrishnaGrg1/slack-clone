@@ -35,16 +35,18 @@ type CallSummary struct {
 }
 
 type Channel struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	IsPrivate pgtype.Bool        `json:"is_private"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	ChannelType string             `json:"channel_type"`
+	CreatedBy   pgtype.UUID        `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type ChannelMember struct {
 	ChannelID pgtype.UUID        `json:"channel_id"`
 	UserID    pgtype.UUID        `json:"user_id"`
+	Role      string             `json:"role"`
 	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
 	LastRead  pgtype.UUID        `json:"last_read"`
 }
@@ -67,4 +69,19 @@ type User struct {
 	Password  string             `json:"password"`
 	AvatarUrl pgtype.Text        `json:"avatar_url"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Workspace struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	Slug      string             `json:"slug"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkspaceMember struct {
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	Role        string             `json:"role"`
+	JoinedAt    pgtype.Timestamptz `json:"joined_at"`
 }

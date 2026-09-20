@@ -8,10 +8,14 @@ import (
 )
 
 type Config struct {
-	DB_URL     string
-	PORT       string
-	JWT_SECRET string
-	REDIS_URL  string
+	DB_URL             string
+	PORT               string
+	JWT_SECRET         string
+	REDIS_URL          string
+	OPENROUTER_API_KEY string
+	OPENROUTER_MODEL   string
+
+	OPENROUTER_AUDIO_MODEL string
 }
 
 func Load() *Config {
@@ -19,10 +23,13 @@ func Load() *Config {
 		log.Println("No .env file, using system env")
 	}
 	return &Config{
-		DB_URL:     getEnv("GOOSE_DBSTRING", ""),
-		PORT:       getEnv("PORT", "8080"),
-		JWT_SECRET: getEnv("JWT_SECRET", ""),
-		REDIS_URL:  getEnv("REDIS_URL", "redis://localhost:6379"),
+		DB_URL:                 getEnv("GOOSE_DBSTRING", ""),
+		PORT:                   getEnv("PORT", "8080"),
+		JWT_SECRET:             getEnv("JWT_SECRET", ""),
+		REDIS_URL:              getEnv("REDIS_URL", "redis://localhost:6379"),
+		OPENROUTER_API_KEY:     getEnv("OPENROUTER_API_KEY", ""),
+		OPENROUTER_MODEL:       getEnv("OPENROUTER_MODEL", ""),
+		OPENROUTER_AUDIO_MODEL: getEnv("OPENROUTER_AUDIO_MODEL", ""),
 	}
 }
 

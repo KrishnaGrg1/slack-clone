@@ -1,5 +1,4 @@
 -- +goose Up
-
 CREATE TABLE messages (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     channel_id UUID REFERENCES channels(id) ON DELETE CASCADE,
@@ -16,5 +15,4 @@ CREATE INDEX idx_messages_thread  ON messages(parent_id) WHERE parent_id IS NOT 
 CREATE INDEX idx_messages_fts     ON messages USING GIN(to_tsvector('english', content));
 
 -- +goose Down
-
-DROP TABLE IF EXISTS messages;
+DROP TABLE IF EXISTS messages CASCADE;
