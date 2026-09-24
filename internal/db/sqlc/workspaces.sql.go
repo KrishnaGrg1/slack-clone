@@ -29,19 +29,25 @@ func (q *Queries) AddWorkspaceMember(ctx context.Context, arg AddWorkspaceMember
 }
 
 const createWorkspace = `-- name: CreateWorkspace :one
-INSERT INTO workspaces (name, slug, created_by)
-VALUES ($1, $2, $3)
-RETURNING id, name, slug, created_by, created_at
+INSERT INTO workspaces (name, slug, is_private, created_by)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
 `
 
 type CreateWorkspaceParams struct {
 	Name      string      `json:"name"`
 	Slug      string      `json:"slug"`
+	IsPrivate pgtype.Bool `json:"is_private"`
 	CreatedBy pgtype.UUID `json:"created_by"`
 }
 
 func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error) {
-	row := q.db.QueryRow(ctx, createWorkspace, arg.Name, arg.Slug, arg.CreatedBy)
+	row := q.db.QueryRow(ctx, createWorkspace,
+		arg.Name,
+		arg.Slug,
+		arg.IsPrivate,
+		arg.CreatedBy,
+	)
 	var i Workspace
 	err := row.Scan(
 		&i.ID,
@@ -49,12 +55,90 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 		&i.Slug,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.IsPrivate,
+		&i.InviteCode,
+		&i.InviteExpiresAt,
 	)
 	return i, err
 }
 
+const deleteWorkspace = `-- name: DeleteWorkspace :exec
+DELETE From workspaces
+WHERE id = $1 and created_by = $2
+`
+
+type DeleteWorkspaceParams struct {
+	ID        pgtype.UUID `json:"id"`
+	CreatedBy pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) DeleteWorkspace(ctx context.Context, arg DeleteWorkspaceParams) error {
+	_, err := q.db.Exec(ctx, deleteWorkspace, arg.ID, arg.CreatedBy)
+	return err
+}
+
+const editWorkspace = `-- name: EditWorkspace :exec
+UPDATE workspaces
+set name = $1, slug = $2, is_private = $3
+where id = $4 and created_by = $5
+`
+
+type EditWorkspaceParams struct {
+	Name      string      `json:"name"`
+	Slug      string      `json:"slug"`
+	IsPrivate pgtype.Bool `json:"is_private"`
+	ID        pgtype.UUID `json:"id"`
+	CreatedBy pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) error {
+	_, err := q.db.Exec(ctx, editWorkspace,
+		arg.Name,
+		arg.Slug,
+		arg.IsPrivate,
+		arg.ID,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const generateWorkspaceInvite = `-- name: GenerateWorkspaceInvite :one
+UPDATE workspaces
+set 
+    invite_code = $1,
+    invite_expires_at = $2
+where 
+    id = $3
+    and created_by = $4
+returning invite_code, invite_expires_at
+`
+
+type GenerateWorkspaceInviteParams struct {
+	InviteCode      pgtype.Text        `json:"invite_code"`
+	InviteExpiresAt pgtype.Timestamptz `json:"invite_expires_at"`
+	ID              pgtype.UUID        `json:"id"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+}
+
+type GenerateWorkspaceInviteRow struct {
+	InviteCode      pgtype.Text        `json:"invite_code"`
+	InviteExpiresAt pgtype.Timestamptz `json:"invite_expires_at"`
+}
+
+func (q *Queries) GenerateWorkspaceInvite(ctx context.Context, arg GenerateWorkspaceInviteParams) (GenerateWorkspaceInviteRow, error) {
+	row := q.db.QueryRow(ctx, generateWorkspaceInvite,
+		arg.InviteCode,
+		arg.InviteExpiresAt,
+		arg.ID,
+		arg.CreatedBy,
+	)
+	var i GenerateWorkspaceInviteRow
+	err := row.Scan(&i.InviteCode, &i.InviteExpiresAt)
+	return i, err
+}
+
 const getWorkspaceByID = `-- name: GetWorkspaceByID :one
-SELECT id, name, slug, created_by, created_at FROM workspaces WHERE id = $1 LIMIT 1
+SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at FROM workspaces WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error) {
@@ -66,6 +150,37 @@ func (q *Queries) GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspa
 		&i.Slug,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.IsPrivate,
+		&i.InviteCode,
+		&i.InviteExpiresAt,
+	)
+	return i, err
+}
+
+const getWorkspaceByInviteCode = `-- name: GetWorkspaceByInviteCode :one
+SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at From
+    workspaces
+WHERE 
+    invite_code = $1
+    AND
+    (
+      invite_expires_at IS NULL
+      OR invite_expires_at > NOW()
+  )
+`
+
+func (q *Queries) GetWorkspaceByInviteCode(ctx context.Context, inviteCode pgtype.Text) (Workspace, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceByInviteCode, inviteCode)
+	var i Workspace
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.IsPrivate,
+		&i.InviteCode,
+		&i.InviteExpiresAt,
 	)
 	return i, err
 }
@@ -110,7 +225,7 @@ func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UU
 }
 
 const getWorkspacesByUser = `-- name: GetWorkspacesByUser :many
-SELECT w.id, w.name, w.slug, w.created_by, w.created_at FROM workspaces w
+SELECT w.id, w.name, w.slug, w.created_by, w.created_at, w.is_private, w.invite_code, w.invite_expires_at FROM workspaces w
 INNER JOIN workspace_members wm ON wm.workspace_id = w.id
 WHERE wm.user_id = $1
 ORDER BY w.created_at ASC
@@ -131,6 +246,9 @@ func (q *Queries) GetWorkspacesByUser(ctx context.Context, userID pgtype.UUID) (
 			&i.Slug,
 			&i.CreatedBy,
 			&i.CreatedAt,
+			&i.IsPrivate,
+			&i.InviteCode,
+			&i.InviteExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -159,4 +277,75 @@ func (q *Queries) IsWorkspaceMember(ctx context.Context, arg IsWorkspaceMemberPa
 	var is_member bool
 	err := row.Scan(&is_member)
 	return is_member, err
+}
+
+const searchWorkspaces = `-- name: SearchWorkspaces :many
+SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
+FROM workspaces
+WHERE
+    (
+        $1::text = ''
+        OR name ILIKE '%' || $1::text || '%'
+        OR slug ILIKE '%' || $1::text || '%'
+    )
+    AND (
+        $2::uuid IS NULL
+        OR created_by = $2::uuid
+    )
+    AND (
+        $3::timestamptz IS NULL
+        OR created_at >= $3::timestamptz
+    )
+    AND (
+        $4::timestamptz IS NULL
+        OR created_at < $4::timestamptz
+    )
+ORDER BY created_at DESC
+LIMIT $6::int
+OFFSET $5::int
+`
+
+type SearchWorkspacesParams struct {
+	Search        string             `json:"search"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAfter  pgtype.Timestamptz `json:"created_after"`
+	CreatedBefore pgtype.Timestamptz `json:"created_before"`
+	PageOffset    int32              `json:"page_offset"`
+	PageLimit     int32              `json:"page_limit"`
+}
+
+func (q *Queries) SearchWorkspaces(ctx context.Context, arg SearchWorkspacesParams) ([]Workspace, error) {
+	rows, err := q.db.Query(ctx, searchWorkspaces,
+		arg.Search,
+		arg.CreatedBy,
+		arg.CreatedAfter,
+		arg.CreatedBefore,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workspace
+	for rows.Next() {
+		var i Workspace
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Slug,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.IsPrivate,
+			&i.InviteCode,
+			&i.InviteExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

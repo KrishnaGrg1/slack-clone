@@ -16,16 +16,10 @@ function RouteComponent() {
       <div className="w-full max-w-sm relative z-10">
         {/* Logo — identical to NavBar */}
         <div className="text-center mb-8">
-          <a
-            href="/"
-            className="inline-block no-underline"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            <span className="text-2xl font-semibold text-[#F5F0E8] tracking-tight">
-              Thread<span className="text-[#E8A838]">Call</span>
-            </span>
-          </a>
-          <p className="text-xs text-[#7A7890] mt-2 leading-5">
+          <div className="text-center mb-6">
+            <a href="/">logo</a>
+          </div>
+          <p className="text-xs text-[#7A7890] mb-6 leading-5">
             Welcome back. Sign in to your workspace.
           </p>
           <Card className="border-[#2A2A3A] bg-[#16161F] rounded-2xl overflow-hidden shadow-2xl">
@@ -95,10 +89,7 @@ function RouteComponent() {
 
           {/* Back link */}
           <p className="text-center mt-6">
-            <a
-              href="/"
-              className="text-[10px] text-[#4A4860] hover:text-[#7A7890] transition-colors duration-300 no-underline"
-            >
+            <a href="/" className="text-[10px] text-[#4A4860] ...">
               ← Back to threadcall.dev
             </a>
           </p>

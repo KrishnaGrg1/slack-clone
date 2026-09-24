@@ -1,6 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import axiosInstance from '../axios'
-import { CreateChannelSchema, GetChannelByIDSchema, GetChannelMessageSchema, JoinChannelSchema, LeaveChannelSchema} from '../schema/channel.schema'
+import {
+  CreateChannelSchema,
+  GetChannelByIDSchema,
+  GetChannelMessageSchema,
+  JoinChannelSchema,
+  LeaveChannelSchema,
+} from '../schema/channel.schema'
 import type {
   CreateChannelInput,
   CreateChannelResponse,
@@ -52,76 +58,73 @@ export const getAllChannel = createServerFn({ method: 'GET' }).handler(
 )
 
 // get channel by channel_id
-export const getChannelByID=createServerFn({method:'GET'})
-.inputValidator((data)=>GetChannelByIDSchema.parse(data))
-.handler(async({data})=>{
-  try {
-      const res = await axiosInstance<
-        GetChannelByIDInput,
-        GetChannelResponse
-      >(`/channels/${data.id}`, {
-        method: 'GET',
-      })
+export const getChannelByID = createServerFn({ method: 'GET' })
+  .inputValidator((data) => GetChannelByIDSchema.parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const res = await axiosInstance<GetChannelByIDInput, GetChannelResponse>(
+        `/channels/${data.id}`,
+        {
+          method: 'GET',
+        },
+      )
       return res.data
     } catch (error: unknown) {
       const err = error as Error
       throw new Error(err.message || 'Failed to get channel')
     }
-})
-
+  })
 
 // join channel
-export const joinChannel=createServerFn({method:'POST'})
-.inputValidator((data)=>JoinChannelSchema.parse(data))
-.handler(async({data})=>{
-  try {
-      const res = await axiosInstance<
-        JoinChannelInput,
-        JoinChannelResponse
-      >(`/channels/${data.id}/join`, {
-        method: 'POST',
-      })
+export const joinChannel = createServerFn({ method: 'POST' })
+  .inputValidator((data) => JoinChannelSchema.parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const res = await axiosInstance<JoinChannelInput, JoinChannelResponse>(
+        `/channels/${data.id}/join`,
+        {
+          method: 'POST',
+        },
+      )
       return res.data
     } catch (error: unknown) {
       const err = error as Error
       throw new Error(err.message || 'Failed to get channel')
     }
-})
-
+  })
 
 // leave channel
-export const leaveChannel=createServerFn({method:'POST'})
-.inputValidator((data)=>LeaveChannelSchema.parse(data))
-.handler(async({data})=>{
-  try {
-      const res = await axiosInstance<
-        LeaveChannelInput,
-        LeaveChannelResponse
-      >(`/channels/${data.id}/leave`, {
-        method: 'POST',
-      })
+export const leaveChannel = createServerFn({ method: 'POST' })
+  .inputValidator((data) => LeaveChannelSchema.parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const res = await axiosInstance<LeaveChannelInput, LeaveChannelResponse>(
+        `/channels/${data.id}/leave`,
+        {
+          method: 'POST',
+        },
+      )
       return res
     } catch (error: unknown) {
       const err = error as Error
       throw new Error(err.message || 'Failed to get channel')
     }
-})
-
+  })
 
 // get channel messages
-export const getChannelMessage=createServerFn({method:'GET'})
-.inputValidator((data)=>GetChannelMessageSchema.parse(data))
-.handler(async({data})=>{
-  try {
-      const res = await axiosInstance<
-      null,
-        GetChannelMessageResponse
-      >(`/channels/${data.id}/messages`, {
-        method: 'GET',
-      })
+export const getChannelMessage = createServerFn({ method: 'GET' })
+  .inputValidator((data) => GetChannelMessageSchema.parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const res = await axiosInstance<null, GetChannelMessageResponse>(
+        `/channels/${data.id}/messages`,
+        {
+          method: 'GET',
+        },
+      )
       return res.data
     } catch (error: unknown) {
       const err = error as Error
       throw new Error(err.message || 'Failed to get channel')
     }
-})
+  })

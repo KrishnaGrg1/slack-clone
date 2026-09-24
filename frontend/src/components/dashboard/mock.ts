@@ -2,19 +2,19 @@
 
 type MessageType = 'text' | 'call_summary'
 
-export interface  Participant {
+export interface Participant {
   id: string
   name: string
   avatar: string
   online: boolean
 }
 
-export interface  ActionItem {
+export interface ActionItem {
   owner: string
   task: string
 }
 
-export interface  CallSummary {
+export interface CallSummary {
   callID: string
   duration: string
   participants: string[]
@@ -23,7 +23,7 @@ export interface  CallSummary {
   key_points: string[]
 }
 
-export interface  Message {
+export interface Message {
   id: string
   senderID: string
   senderName: string
@@ -36,13 +36,12 @@ export interface  Message {
   replyCount?: number
 }
 
-export interface  Channel {
+export interface Channel {
   id: string
   name: string
   unread: number
   active?: boolean
 }
-
 
 // ── Mock data ──────────────────────────────────────────────────────────────
 

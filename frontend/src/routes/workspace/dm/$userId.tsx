@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/(dashboard)/channel')({
+export const Route = createFileRoute('/workspace/dm/$userId')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div>Hello "/(dashboard)/channel"!</div>
+  return <div>Hello "/workspace/dm/$userId"!</div>
 }

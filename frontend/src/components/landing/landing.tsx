@@ -79,7 +79,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-4 flex-wrap justify-center mb-16 reveal">
             <Button className="bg-[#E8A838] hover:bg-[#F0B848] text-[#0A0A0F] font-semibold px-6 py-3 rounded-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(232,168,56,0.25)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#E8A838] focus-visible:ring-offset-2">
-              <a href="#cta">★ Get early access</a>
+              <a href="/login">Login</a>
             </Button>
             <Button
               variant="outline"

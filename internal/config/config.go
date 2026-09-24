@@ -16,6 +16,7 @@ type Config struct {
 	OPENROUTER_MODEL   string
 
 	OPENROUTER_AUDIO_MODEL string
+	FRONTEND_URL           string
 }
 
 func Load() *Config {
@@ -30,6 +31,7 @@ func Load() *Config {
 		OPENROUTER_API_KEY:     getEnv("OPENROUTER_API_KEY", ""),
 		OPENROUTER_MODEL:       getEnv("OPENROUTER_MODEL", ""),
 		OPENROUTER_AUDIO_MODEL: getEnv("OPENROUTER_AUDIO_MODEL", ""),
+		FRONTEND_URL:           getEnv("FRONTEND_URL", ""),
 	}
 }
 

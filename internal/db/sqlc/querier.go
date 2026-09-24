@@ -17,7 +17,10 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
 	DeleteMessage(ctx context.Context, arg DeleteMessageParams) error
+	DeleteWorkspace(ctx context.Context, arg DeleteWorkspaceParams) error
 	EditMessage(ctx context.Context, arg EditMessageParams) (Message, error)
+	EditWorkspace(ctx context.Context, arg EditWorkspaceParams) error
+	GenerateWorkspaceInvite(ctx context.Context, arg GenerateWorkspaceInviteParams) (GenerateWorkspaceInviteRow, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
 	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
 	GetChannelMessages(ctx context.Context, arg GetChannelMessagesParams) ([]GetChannelMessagesRow, error)
@@ -28,12 +31,14 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
+	GetWorkspaceByInviteCode(ctx context.Context, inviteCode pgtype.Text) (Workspace, error)
 	GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]GetWorkspaceMembersRow, error)
 	GetWorkspacesByUser(ctx context.Context, userID pgtype.UUID) ([]Workspace, error)
 	IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error)
 	IsWorkspaceMember(ctx context.Context, arg IsWorkspaceMemberParams) (bool, error)
 	JoinChannel(ctx context.Context, arg JoinChannelParams) error
 	LeaveChannel(ctx context.Context, arg LeaveChannelParams) error
+	SearchWorkspaces(ctx context.Context, arg SearchWorkspacesParams) ([]Workspace, error)
 }
 
 var _ Querier = (*Queries)(nil)

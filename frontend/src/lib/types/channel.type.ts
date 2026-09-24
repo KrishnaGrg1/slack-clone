@@ -28,8 +28,8 @@ export interface GetAllChannelResponse {
   data: Channels[]
 }
 
-export interface GetChannelByIDInput{
-    id:string
+export interface GetChannelByIDInput {
+  id: string
 }
 export interface GetChannelResponse {
   success: boolean
@@ -37,8 +37,8 @@ export interface GetChannelResponse {
   data: Channels
 }
 
-export interface JoinChannelInput{
-    id:string
+export interface JoinChannelInput {
+  id: string
 }
 export interface JoinChannelResponse {
   success: boolean
@@ -46,35 +46,32 @@ export interface JoinChannelResponse {
   data: Channels
 }
 
-
-export interface LeaveChannelInput{
-    id:string
+export interface LeaveChannelInput {
+  id: string
 }
 export interface LeaveChannelResponse {
   success: boolean
   message: string
 }
 
-
-export interface GetChannelMessageInput{
-    id:string
+export interface GetChannelMessageInput {
+  id: string
 }
 
-export interface Message{
-  id:string
-  channel_id:string
-  sender_id:string
-  content:string
-  parent_id:string
-  msg_type:string
-  created_at:string
-  edited_at:string
-  sender_username:string
-  sender_avatar:string
+export interface Message {
+  id: string
+  channel_id: string
+  sender_id: string
+  content: string
+  parent_id: string
+  msg_type: string
+  created_at: string
+  edited_at: string
+  sender_username: string
+  sender_avatar: string
 }
 export interface GetChannelMessageResponse {
   success: boolean
   message: string
   data: Message[]
 }
-

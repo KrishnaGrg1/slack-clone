@@ -72,11 +72,14 @@ type User struct {
 }
 
 type Workspace struct {
-	ID        pgtype.UUID        `json:"id"`
-	Name      string             `json:"name"`
-	Slug      string             `json:"slug"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID              pgtype.UUID        `json:"id"`
+	Name            string             `json:"name"`
+	Slug            string             `json:"slug"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	IsPrivate       pgtype.Bool        `json:"is_private"`
+	InviteCode      pgtype.Text        `json:"invite_code"`
+	InviteExpiresAt pgtype.Timestamptz `json:"invite_expires_at"`
 }
 
 type WorkspaceMember struct {

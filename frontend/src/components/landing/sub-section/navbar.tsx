@@ -53,7 +53,7 @@ export function NavBar() {
         size="sm"
         className="rounded-full bg-[#E8A838] hover:bg-[#F0B848] text-[#0A0A0F] font-semibold text-sm px-4 py-2 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(232,168,56,0.3)] active:scale-[0.98]"
       >
-        <a href="#cta">Get early access</a>
+        <a href="/login">Login</a>
       </Button>
     </nav>
   )

@@ -30,13 +30,8 @@ import {
 
 import { createFileRoute } from '@tanstack/react-router'
 import CallOverlay from '#/components/call/CallOverlay'
-import {
-  CHANNELS,
-  MESSAGES,
-  ONLINE_MEMBERS,
-  type CallSummary,
-  type Message,
-} from '#/components/dashboard/mock'
+import { CHANNELS, MESSAGES, ONLINE_MEMBERS } from '#/components/dashboard/mock'
+import type { CallSummary, Message } from '#/components/dashboard/mock'
 import Sidebar from '#/components/dashboard/sidebar'
 import {
   Avatar,
@@ -45,7 +40,7 @@ import {
   AvatarGroupCount,
 } from '#/components/ui/avatar'
 
-export const Route = createFileRoute('/(dashboard)/dashboard')({
+export const Route = createFileRoute('/workspace/$id/')({
   component: Dashboard,
 })
 
