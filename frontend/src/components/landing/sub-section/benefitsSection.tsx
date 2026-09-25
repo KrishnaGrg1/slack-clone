@@ -7,10 +7,7 @@ export function BenefitsSection() {
       <p className="text-xs font-semibold text-[#E8A838] uppercase tracking-widest mb-4 reveal">
         Why ThreadCall
       </p>
-      <h2
-        className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-16 reveal"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
+      <h2 className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-16 reveal">
         Everything your team needs. Nothing you don't.
       </h2>
 
@@ -23,10 +20,7 @@ export function BenefitsSection() {
             <div className="w-10 h-10 rounded-xl bg-[#E8A838]/10 border border-[#E8A838]/20 flex items-center justify-center text-lg mb-5">
               {b.icon}
             </div>
-            <h3
-              className="font-display text-lg font-normal text-[#F5F0E8] mb-2.5 tracking-tight leading-snug"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
+            <h3 className="font-display text-lg font-normal text-[#F5F0E8] mb-2.5 tracking-tight leading-snug">
               {b.title}
             </h3>
             <p className="text-xs text-[#7A7890] leading-5">{b.body}</p>

@@ -23,10 +23,7 @@ export function ProblemSection() {
       <p className="text-xs font-semibold text-[#E8A838] uppercase tracking-widest mb-4 reveal">
         The gap nobody fixed
       </p>
-      <h2
-        className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-4 reveal"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
+      <h2 className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-4 reveal">
         Your best decisions disappear after every call
       </h2>
       <p className="text-sm text-[#7A7890] max-w-md mb-12 leading-6 reveal">
@@ -41,10 +38,7 @@ export function ProblemSection() {
           <p className="text-xs font-semibold text-[#E05555] uppercase tracking-wider mb-5 flex items-center gap-2">
             <span>✕</span> Today with Slack + Zoom
           </p>
-          <h3
-            className="font-display text-xl font-normal text-[#F5F0E8] mb-3 tracking-tight leading-snug"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <h3 className="font-display text-xl font-normal text-[#F5F0E8] mb-3 tracking-tight leading-snug">
             Leave, link, call, forget, summarize. Repeat.
           </h3>
           <p className="text-xs text-[#7A7890] leading-5 mb-6">
@@ -72,10 +66,7 @@ export function ProblemSection() {
           <p className="text-xs font-semibold text-[#1D9E75] uppercase tracking-wider mb-5 flex items-center gap-2">
             <span>✓</span> With ThreadCall
           </p>
-          <h3
-            className="font-display text-xl font-normal text-[#F5F0E8] mb-3 tracking-tight leading-snug"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <h3 className="font-display text-xl font-normal text-[#F5F0E8] mb-3 tracking-tight leading-snug">
             Call from the thread. Summary posts itself.
           </h3>
           <p className="text-xs text-[#7A7890] leading-5 mb-6">

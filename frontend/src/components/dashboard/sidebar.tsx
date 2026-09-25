@@ -35,10 +35,7 @@ export default function Sidebar({
       <aside className="w-60 shrink-0 flex flex-col min-h-0  bg-[#111118] border-r border-[#2A2A3A]">
         {/* Workspace header */}
         <div className="h-12 flex items-center justify-between px-4 border-b border-[#2A2A3A] shrink-0">
-          <span
-            className="text-sm font-semibold text-[#F5F0E8] tracking-tight"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
+          <span className="text-sm font-semibold text-[#F5F0E8] tracking-tight font-display">
             Thread<span className="text-[#E8A838]">Call</span>
           </span>
 

@@ -24,12 +24,13 @@ export default function LoginForm() {
 
   return (
     <form
+      role="form"
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="flex flex-col gap-4"
+      className="w-full"
     >
       {/* SERVER ERROR */}
       {loginError && (
@@ -56,8 +57,8 @@ export default function LoginForm() {
           const hasError = field.state.meta.errors.length > 0
 
           return (
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
                 <Label
                   htmlFor={field.name}
                   className="block text-[11px] font-medium text-[#B8B5C5]"
@@ -75,12 +76,14 @@ export default function LoginForm() {
                   autoComplete="email"
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
+                  aria-describedby={
+                    hasError ? `error-${field.name}` : undefined
+                  }
                   className={cn(
                     'w-full rounded-lg border bg-[#111118]',
                     'px-3 py-2.5',
                     'text-xs text-[#F5F0E8]',
                     'placeholder:text-[#4A4860]',
-                    // 'outline-none',
                     hasError
                       ? 'border-[#E05555]/60 focus:border-[#E05555] focus:ring-1 focus:ring-[#E05555]/20'
                       : 'border-[#2A2A3A] focus:border-[#E8A838] focus:ring-1 focus:ring-[#E8A838]/30',
@@ -88,7 +91,10 @@ export default function LoginForm() {
                 />
               </div>
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <p
+                  id={`error-${field.name}`}
+                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
                 </p>
               )}
@@ -113,8 +119,8 @@ export default function LoginForm() {
           const hasError = field.state.meta.errors.length > 0
 
           return (
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
                 <Label
                   htmlFor={field.name}
                   className="block text-[11px] font-medium text-[#B8B5C5]"
@@ -122,12 +128,12 @@ export default function LoginForm() {
                   Password
                 </Label>
 
-                <button
-                  type="button"
-                  className="text-[10px] text-[#4A4860] transition-colors duration-300 hover:text-[#E8A838] focus-visible:outline-none cursor-pointer"
+                <a
+                  href="/forgot-password"
+                  className="text-[10px] text-[#4A4860] transition-colors duration-300 hover:text-[#E8A838]"
                 >
                   Forgot password?
-                </button>
+                </a>
               </div>
 
               <div className="relative">
@@ -140,12 +146,14 @@ export default function LoginForm() {
                   autoComplete="current-password"
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
+                  aria-describedby={
+                    hasError ? `error-${field.name}` : undefined
+                  }
                   className={cn(
                     'w-full rounded-lg border bg-[#111118]',
                     'px-3 py-2.5 pr-10',
                     'text-xs text-[#F5F0E8]',
                     'placeholder:text-[#4A4860]',
-                    'outline-none',
                     'transition-all duration-300',
                     hasError
                       ? 'border-[#E05555]/60 focus:border-[#E05555] focus:ring-1 focus:ring-[#E05555]/20'
@@ -156,7 +164,7 @@ export default function LoginForm() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4860] transition-colors duration-200 hover:text-[#B8B5C5] focus-visible:outline-none cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A4860] transition-colors duration-200 hover:text-[#B8B5C5] focus-visible:outline-none"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -168,7 +176,10 @@ export default function LoginForm() {
               </div>
 
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <p
+                  id={`error-${field.name}`}
+                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
                 </p>
               )}
@@ -178,37 +189,39 @@ export default function LoginForm() {
       </form.Field>
 
       {/* BUTTON */}
-      <Button
-        type="submit"
-        disabled={isPending}
-        className={cn(
-          'h-10 w-full rounded-lg cursor-pointer',
-          'text-sm font-semibold',
-          'bg-[#E8A838] text-[#0A0A0F]',
-          'hover:bg-[#F0B848]',
-          'transition-all duration-500',
-          'hover:-translate-y-0.5',
-          'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
-          'active:scale-[0.98]',
-          'active:translate-y-0',
-          'focus-visible:outline-none',
-          'focus-visible:ring-2',
-          'focus-visible:ring-[#E8A838]',
-          'focus-visible:ring-offset-2',
-          'focus-visible:ring-offset-[#16161F]',
-          'disabled:pointer-events-none',
-          'disabled:opacity-50',
-        )}
-      >
-        {isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F]" />
-            Signing in...
-          </span>
-        ) : (
-          'Sign in'
-        )}
-      </Button>
+      <div className="mt-2">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className={cn(
+            'h-10 w-full rounded-lg cursor-pointer',
+            'text-sm font-semibold',
+            'bg-[#E8A838] text-[#0A0A0F]',
+            'hover:bg-[#F0B848]',
+            'transition-all duration-500',
+            'hover:-translate-y-0.5',
+            'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
+            'active:scale-[0.98]',
+            'active:translate-y-0',
+            'focus-visible:outline-none',
+            'focus-visible:ring-2',
+            'focus-visible:ring-[#E8A838]',
+            'focus-visible:ring-offset-2',
+            'focus-visible:ring-offset-[#16161F]',
+            'disabled:pointer-events-none',
+            'disabled:opacity-50',
+          )}
+        >
+          {isPending ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F]" />
+              Signing in...
+            </span>
+          ) : (
+            'Sign in'
+          )}
+        </Button>
+      </div>
     </form>
   )
 }

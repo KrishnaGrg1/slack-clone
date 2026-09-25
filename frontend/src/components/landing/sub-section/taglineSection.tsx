@@ -29,13 +29,7 @@ export function TaglineSection() {
   return (
     <div className="border-y border-[#2A2A3A] py-24 px-6 text-center overflow-hidden">
       <div ref={ref} id="tagline" className="max-w-3xl mx-auto">
-        <p
-          className="font-display font-light tracking-tight leading-tight"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(32px, 4.5vw, 56px)',
-          }}
-        >
+        <p className="font-display font-light tracking-tight leading-tight text-2xl md:text-3xl lg:text-4xl">
           {line1.map((w, i) => (
             <span key={i} className="tagline-word">
               {w}{' '}

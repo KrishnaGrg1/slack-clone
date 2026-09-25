@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from '#/components/ui/card'
 
 export function HeroDemo() {
   return (
-    <Card className="w-full max-w-xl border-[#2A2A3A] bg-[#16161F] rounded-2xl overflow-hidden text-left reveal">
+    <Card className="w-full max-w-xl border-[#2A2A3A] bg-[#16161F] rounded-2xl overflow-hidden text-left reveal shadow-lg">
       {/* Window chrome */}
       <CardHeader className="flex flex-row items-center gap-2 px-4 py-3 bg-[#111118] border-b border-[#2A2A3A] space-y-0">
         <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />

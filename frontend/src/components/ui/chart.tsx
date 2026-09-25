@@ -310,12 +310,14 @@ function ChartLegendContent({
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
               ) : (
-                <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
+                <svg
+                  className="h-2 w-2 shrink-0"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="8" height="8" rx="1" fill={item.color} />
+                </svg>
               )}
               {itemConfig?.label}
             </div>

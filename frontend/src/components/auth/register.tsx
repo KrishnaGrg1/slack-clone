@@ -28,12 +28,13 @@ export default function RegisterForm() {
 
   return (
     <form
+      role="form"
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="flex flex-col gap-4"
+      className="w-full"
     >
       {/* SERVER ERROR */}
       {registerError && (
@@ -59,8 +60,8 @@ export default function RegisterForm() {
         {(field) => {
           const hasError = field.state.meta.errors.length > 0
           return (
-            <div>
-              <div className="mb-1.5">
+            <div className="space-y-1">
+              <div>
                 <Label
                   htmlFor={field.name}
                   className="block text-[11px] font-medium text-[#B8B5C5]"
@@ -77,6 +78,7 @@ export default function RegisterForm() {
                 autoComplete="username"
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                aria-describedby={hasError ? `error-${field.name}` : undefined}
                 className={cn(
                   'w-full rounded-lg border bg-[#111118]',
                   'px-3 py-2.5',
@@ -88,7 +90,10 @@ export default function RegisterForm() {
                 )}
               />
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <p
+                  id={`error-${field.name}`}
+                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
                 </p>
               )}
@@ -112,8 +117,8 @@ export default function RegisterForm() {
         {(field) => {
           const hasError = field.state.meta.errors.length > 0
           return (
-            <div>
-              <div className="mb-1.5">
+            <div className="space-y-1">
+              <div>
                 <Label
                   htmlFor={field.name}
                   className="block text-[11px] font-medium text-[#B8B5C5]"
@@ -130,6 +135,7 @@ export default function RegisterForm() {
                 autoComplete="email"
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                aria-describedby={hasError ? `error-${field.name}` : undefined}
                 className={cn(
                   'w-full rounded-lg border bg-[#111118]',
                   'px-3 py-2.5',
@@ -141,7 +147,10 @@ export default function RegisterForm() {
                 )}
               />
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <p
+                  id={`error-${field.name}`}
+                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
                 </p>
               )}
@@ -290,33 +299,37 @@ export default function RegisterForm() {
       </form.Field>
 
       {/* SUBMIT */}
-      <Button
-        type="submit"
-        disabled={isPending}
-        className={cn(
-          'h-10 w-full rounded-lg cursor-pointer',
-          'text-sm font-semibold',
-          'bg-[#E8A838] text-[#0A0A0F]',
-          'hover:bg-[#F0B848]',
-          'transition-all duration-500',
-          'hover:-translate-y-0.5',
-          'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
-          'active:scale-[0.98] active:translate-y-0',
-          'focus-visible:outline-none focus-visible:ring-2',
-          'focus-visible:ring-[#E8A838] focus-visible:ring-offset-2',
-          'focus-visible:ring-offset-[#16161F]',
-          'disabled:pointer-events-none disabled:opacity-50',
-        )}
-      >
-        {isPending ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F]" />
-            Creating account...
-          </span>
-        ) : (
-          'Create account'
-        )}
-      </Button>
+
+      {/* BUTTON */}
+      <div className="mt-2">
+        <Button
+          type="submit"
+          disabled={isPending}
+          className={cn(
+            'h-10 w-full rounded-lg cursor-pointer',
+            'text-sm font-semibold',
+            'bg-[#E8A838] text-[#0A0A0F]',
+            'hover:bg-[#F0B848]',
+            'transition-all duration-500',
+            'hover:-translate-y-0.5',
+            'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
+            'active:scale-[0.98] active:translate-y-0',
+            'focus-visible:outline-none focus-visible:ring-2',
+            'focus-visible:ring-[#E8A838] focus-visible:ring-offset-2',
+            'focus-visible:ring-offset-[#16161F]',
+            'disabled:pointer-events-none disabled:opacity-50',
+          )}
+        >
+          {isPending ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F]" />
+              Creating account...
+            </span>
+          ) : (
+            'Create account'
+          )}
+        </Button>
+      </div>
     </form>
   )
 }

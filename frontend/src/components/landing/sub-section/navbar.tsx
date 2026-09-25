@@ -23,13 +23,12 @@ export function NavBar() {
         'fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 px-6 py-3 rounded-full border transition-all duration-700',
         'backdrop-blur-xl bg-[#0A0A0F]/80 border-[#2A2A3A]',
         scrolled && 'shadow-[0_8px_32px_rgba(0,0,0,0.6)]',
+        'font-mono',
       )}
-      style={{ fontFamily: 'var(--font-mono)' }}
     >
       <a
         href="/"
         className="font-display text-lg font-semibold text-[#F5F0E8] tracking-tight no-underline"
-        style={{ fontFamily: 'var(--font-display)' }}
       >
         Thread<span className="text-[#E8A838]">Call</span>
       </a>

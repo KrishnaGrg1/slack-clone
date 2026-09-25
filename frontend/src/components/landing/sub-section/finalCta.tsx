@@ -9,14 +9,7 @@ export function FinalCta() {
       {/* ambient glow */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[480px] h-[240px] rounded-full bg-[#E8A838]/06 blur-3xl pointer-events-none" />
 
-      <h2
-        className="font-display font-light tracking-tight text-[#F5F0E8] max-w-xl mx-auto mb-4 reveal"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(32px, 4vw, 52px)',
-          lineHeight: 1.1,
-        }}
-      >
+      <h2 className="font-display font-light tracking-tight text-[#F5F0E8] max-w-xl mx-auto mb-4 reveal text-2xl md:text-3xl lg:text-4xl leading-tight">
         Stop losing decisions to{' '}
         <em className="not-italic text-[#E8A838]">calls nobody documented</em>
       </h2>

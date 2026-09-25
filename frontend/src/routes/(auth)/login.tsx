@@ -17,10 +17,15 @@ function RouteComponent() {
         {/* Logo — identical to NavBar */}
         <div className="text-center mb-8">
           <div className="text-center mb-6">
-            <a href="/">logo</a>
+            <a
+              href="/"
+              className="text-2xl font-display font-semibold text-[#F5F0E8]"
+            >
+              Thread<span className="text-[#E8A838]">Call</span>
+            </a>
           </div>
-          <p className="text-xs text-[#7A7890] mb-6 leading-5">
-            Welcome back. Sign in to your workspace.
+          <p className="text-sm text-[#7A7890] mb-6 leading-6">
+            Welcome back. Sign in to your workspace to continue.
           </p>
           <Card className="border-[#2A2A3A] bg-[#16161F] rounded-2xl overflow-hidden shadow-2xl">
             {/* Window chrome — same as HeroDemo */}
@@ -89,8 +94,11 @@ function RouteComponent() {
 
           {/* Back link */}
           <p className="text-center mt-6">
-            <a href="/" className="text-[10px] text-[#4A4860] ...">
-              ← Back to threadcall.dev
+            <a
+              href="/"
+              className="text-[12px] text-[#7A7890] hover:text-[#F5F0E8] transition-colors"
+            >
+              ← Back to home
             </a>
           </p>
         </div>

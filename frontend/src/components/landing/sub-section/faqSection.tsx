@@ -12,10 +12,7 @@ export function FaqSection() {
       <p className="text-xs font-semibold text-[#E8A838] uppercase tracking-widest mb-4 reveal">
         Common questions
       </p>
-      <h2
-        className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight mb-12 reveal"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
+      <h2 className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight mb-12 reveal">
         Everything you want to know
       </h2>
 

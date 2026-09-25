@@ -6,131 +6,212 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 
-import CreateWorkspaceForm from '#/components/workspace/createWorkspace'
-import { UserData, WorkspaceData } from '#/components/workspace/mock'
 import { getMe } from '#/lib/services/user.services'
 import { GetUserWorkspaces } from '#/lib/services/workspace.service'
 import type { Workspace } from '#/lib/types/workspace.type'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { ArrowRight, Building2 } from 'lucide-react'
+import { ArrowRight, Building2, Plus } from 'lucide-react'
 import { Button } from '#/components/ui/button'
+import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
+import { useState } from 'react'
+import { UserData, WorkspaceData } from '#/components/workspace/mock'
 
 export const Route = createFileRoute('/workspace/')({
   loader: async () => {
-    // let user = null,
-    //   workspaces = null
+    let user = null,
+      workspaces = null
 
+    // const user = UserData
+    // const workspace = WorkspaceData
     try {
-      // user = await getMe()
-      // workspaces = await GetUserWorkspaces()
-    } catch (e) {
+      user = await getMe()
+      workspaces = await GetUserWorkspaces()
+    } catch {
       throw redirect({ to: '/login' })
     }
 
-    // if (!user || !workspaces) {
-    //   throw redirect({ to: '/login' })
-    // }
+    if (!user || !workspaces) throw redirect({ to: '/login' })
 
     return {
-      // user: user.data.user,
-      // workspaces: workspaces.data.workspaces ?? [],
-      user: UserData,
-      workspaces: WorkspaceData ?? [],
+      user: user.data.user,
+      workspaces: workspaces.data.workspaces ?? [],
+      // user: user,
+      // workspaces: workspace ?? [],
     }
   },
   component: RouteComponent,
 })
 
+function WorkspaceAvatar({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#2A2A3A] bg-[#111118] text-sm font-semibold text-[#E8A838]">
+      {initials}
+    </div>
+  )
+}
+
 function RouteComponent() {
   const { user, workspaces } = Route.useLoaderData()
 
+  const hasWorkspaces = workspaces.length > 0
+
   return (
-    <div className="min-h-screen w-full bg-[#0A0A0F] font-mono text-[#EDEBEF]">
-      <main className="flex min-h-screen items-center justify-center px-4 py-8">
-        <Card className="w-full max-w-xl overflow-hidden rounded-2xl border border-[#2A2A3A] bg-[#16161F] p-0 shadow-2xl">
-          <div className="flex items-center gap-2 px-4 py-3 bg-[#111118] border-b border-[#2A2A3A]">
+    <div className="min-h-screen w-full bg-[#0A0A0F] text-[#F5F0E8]">
+      {/* ambient glow */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-0 h-64 w-[500px] -translate-x-1/2 rounded-full bg-[#E8A838]/06 blur-3xl" />
+      </div>
+
+      <main className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:py-16">
+        {/* logo */}
+        <div className="mb-6 text-center sm:mb-8">
+          <a
+            href="/"
+            className="inline-block no-underline"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            <span className="text-xl font-semibold tracking-tight text-[#F5F0E8] sm:text-2xl">
+              Thread<span className="text-[#E8A838]">Call</span>
+            </span>
+          </a>
+        </div>
+
+        <Card className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#2A2A3A] bg-[#16161F] p-0 shadow-2xl sm:max-w-xl">
+          {/* window chrome */}
+          <div className="flex items-center gap-2 border-b border-[#2A2A3A] bg-[#111118] px-4 py-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
             <span className="ml-2 text-xs text-[#7A7890]">
               ThreadCall — workspaces
             </span>
           </div>
-          <CardHeader className="border-b border-[#2A2A3A] px-5 py-5">
-            <CardTitle className="text-xl text-[#F5F0E8]">
+
+          <CardHeader className="border-b border-[#2A2A3A] px-5 py-5 sm:px-6 sm:py-6">
+            <CardTitle
+              className="text-lg font-semibold text-[#F5F0E8] sm:text-xl"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
               Welcome back, {user.username}
             </CardTitle>
-
-            <CardDescription className="mt-1 text-sm text-[#7A7890]">
-              Choose a workspace to get started.
+            <CardDescription className="mt-1.5 text-xs text-[#7A7890] sm:text-sm">
+              {hasWorkspaces
+                ? 'Choose a workspace to jump in, or create a new one.'
+                : 'Create your first workspace to start collaborating.'}
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="p-5">
-            {workspaces.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-[#E8A838]/20 bg-[#E8A838]/10">
-                  <Building2 className="h-5 w-5 text-[#E8A838]" />
-                </div>
-
-                <h3 className="text-sm font-medium text-[#F5F0E8]">
-                  No workspaces yet
-                </h3>
-
-                <p className="mt-1 max-w-sm text-xs leading-5 text-[#9A98A6]">
-                  You haven't joined any workspace yet. Create one to get
-                  started.
-                </p>
-
-                <div className="mt-6 w-full max-w-sm">
-                  <CreateWorkspaceForm />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="mb-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-[#9A98A6]">
-                    Your workspaces
-                  </p>
-                </div>
-
+          <CardContent className="p-0">
+            {/* ── workspace list ── */}
+            {hasWorkspaces && (
+              <div className="divide-y divide-[#1E1E2A]">
                 {workspaces.map((workspace: Workspace) => (
-                  <div
+                  <Link
                     key={workspace.id}
-                    className="group flex items-center justify-between gap-4 rounded-lg border border-[#2A2A3A] bg-[#111118] px-4 py-3.5 transition-colors hover:border-[#E8A838]/30 hover:bg-[#0B0B0D]"
+                    to="/workspace/$slug"
+                    params={{ slug: workspace.slug }}
+                    className={cn(
+                      'group flex min-h-[64px] items-center gap-3 px-5 py-3.5 sm:px-6',
+                      'transition-colors duration-200',
+                      'hover:bg-[#111118]',
+                      'focus:outline-none focus-visible:bg-[#111118]',
+                      'focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-[#E8A838]',
+                    )}
+                    aria-label={`Open workspace ${workspace.name}`}
                   >
-                    <div className="min-w-0">
+                    <WorkspaceAvatar name={workspace.name} />
+
+                    {/* text — truncates on small screens */}
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-[#F5F0E8]">
                         {workspace.name}
                       </p>
-
-                      <p className="mt-0.5 truncate text-xs text-[#6F6D78]">
-                        {workspace.slug}
+                      <p className="mt-0.5 truncate text-[11px] text-[#4A4860]">
+                        threadcall.dev/{workspace.slug}
                       </p>
                     </div>
 
-                    <Link
-                      to="/workspace/$id"
-                      params={{ id: workspace.id }}
-                      className="shrink-0"
+                    {/* arrow — always visible, no text on mobile */}
+                    <div
+                      className={cn(
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                        'bg-[#E8A838]/10 text-[#E8A838]',
+                        'transition-all duration-300',
+                        'group-hover:bg-[#E8A838] group-hover:text-[#0A0A0F]',
+                        'group-hover:shadow-[0_4px_12px_rgba(232,168,56,0.3)]',
+                      )}
                     >
-                      <Button
-                        size="sm"
-                        className={cn(
-                          'inline-flex items-center gap-2',
-                          'bg-[#E8A838] text-[#0A0A0F]',
-                          'hover:bg-[#F0B848]',
-                          'transition-all duration-500',
-                          'hover:-translate-y-0.5',
-                          'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
-                          'active:scale-[0.98] active:translate-y-0',
-                          'focus-visible:ring-2 focus-visible:ring-[#E8A838]',
-                        )}
-                      >
-                        Launch <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </Link>
                 ))}
               </div>
+            )}
+
+            {/* ── empty state ── */}
+            {!hasWorkspaces && (
+              <div className="flex flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl border border-[#E8A838]/20 bg-[#E8A838]/06">
+                  <Building2 className="h-6 w-6 text-[#E8A838]" />
+                </div>
+                <h3
+                  className="text-base font-semibold text-[#F5F0E8] sm:text-lg"
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  No workspaces yet
+                </h3>
+                <p className="mt-2 max-w-sm text-xs leading-6 text-[#7A7890] sm:text-sm">
+                  Create your first workspace to invite teammates and start
+                  having calls inside threads.
+                </p>
+                <Link
+                  to="/workspace/create"
+                  className={cn(
+                    'mt-6 h-10 w-full max-w-xs gap-2 rounded-lg text-sm font-semibold sm:w-auto sm:px-8 flex justify-center items-center',
+                    'bg-[#E8A838] text-[#0A0A0F] hover:bg-[#F0B848]',
+                    'transition-all duration-300 hover:-translate-y-0.5',
+                    'hover:shadow-[0_6px_20px_rgba(232,168,56,0.28)]',
+                    'active:scale-[0.98] active:translate-y-0',
+                    'focus-visible:ring-2 focus-visible:ring-[#E8A838] focus-visible:ring-offset-2 focus-visible:ring-offset-[#16161F]',
+                  )}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create workspace
+                </Link>
+              </div>
+            )}
+
+            {/* ── footer row ── */}
+            {hasWorkspaces && (
+              <>
+                <Separator className="bg-[#1E1E2A]" />
+                <div className="px-5 py-4 sm:px-6">
+                  <Link
+                    to="/workspace/create"
+                    className={cn(
+                      'flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5',
+                      'text-sm text-[#7A7890] hover:text-[#F5F0E8]',
+                      'hover:bg-[#111118] transition-colors duration-200',
+                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#E8A838]',
+                    )}
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#2A2A3A]">
+                      <Plus className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-xs font-medium">
+                      Create or join a workspace
+                    </span>
+                  </Link>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

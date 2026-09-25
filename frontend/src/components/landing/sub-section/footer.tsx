@@ -1,10 +1,7 @@
 export function Footer() {
   return (
     <footer className="border-t border-[#2A2A3A] px-6 py-10 max-w-5xl mx-auto flex items-center justify-between flex-wrap gap-4">
-      <span
-        className="font-display text-base font-semibold text-[#7A7890] tracking-tight"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
+      <span className="font-display text-base font-semibold text-[#7A7890] tracking-tight">
         Thread<span className="text-[#E8A838]">Call</span>
       </span>
       <nav className="flex gap-6" aria-label="Footer">

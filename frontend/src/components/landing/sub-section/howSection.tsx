@@ -6,10 +6,7 @@ export function HowSection() {
       <p className="text-xs font-semibold text-[#E8A838] uppercase tracking-widest mb-4 reveal">
         How it works
       </p>
-      <h2
-        className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-4 reveal"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
+      <h2 className="font-display text-4xl font-light text-[#F5F0E8] tracking-tight max-w-xl mb-4 reveal">
         Three steps. No new tools to learn.
       </h2>
       <p className="text-sm text-[#7A7890] max-w-md mb-16 leading-6 reveal">
@@ -29,10 +26,7 @@ export function HowSection() {
             <div className="w-12 h-12 rounded-xl bg-[#16161F] border border-[#2A2A3A] flex items-center justify-center text-xl mb-6 relative z-10">
               {step.icon}
             </div>
-            <h3
-              className="font-display text-xl font-normal text-[#F5F0E8] mb-2.5 tracking-tight"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
+            <h3 className="font-display text-xl font-normal text-[#F5F0E8] mb-2.5 tracking-tight">
               {step.title}
             </h3>
             <p className="text-xs text-[#7A7890] leading-5 max-w-56">

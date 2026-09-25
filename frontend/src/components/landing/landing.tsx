@@ -49,53 +49,39 @@ export default function LandingPage() {
             Open source · Built in Go
           </Badge>
 
-          <h1
-            className="font-display font-light tracking-tight mb-6 max-w-3xl reveal"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(44px, 7vw, 80px)',
-              lineHeight: 1.05,
-              letterSpacing: '-0.03em',
-              background: 'linear-gradient(160deg, #F5F0E8 0%, #7A7890 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            Conversations that{' '}
-            <em
-              className="not-italic"
-              style={{ WebkitTextFillColor: '#E8A838' }}
-            >
-              remember themselves
-            </em>
-          </h1>
+          <div className="w-full max-w-4xl mx-auto px-4">
+            <h1 className="font-display font-light tracking-tight mb-6 max-w-3xl reveal text-4xl md:text-5xl lg:text-6xl leading-tight">
+              Conversations that{' '}
+              <em className="not-italic text-[#E8A838]">remember themselves</em>
+            </h1>
 
-          <p className="text-base text-[#7A7890] max-w-md mb-10 leading-7 reveal">
-            Start a call from any message thread. When it ends, AI posts the
-            decisions and action items back — automatically, to the exact
-            conversation that needed them.
-          </p>
-
-          <div className="flex items-center gap-4 flex-wrap justify-center mb-16 reveal">
-            <Button className="bg-[#E8A838] hover:bg-[#F0B848] text-[#0A0A0F] font-semibold px-6 py-3 rounded-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(232,168,56,0.25)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#E8A838] focus-visible:ring-offset-2">
-              <a href="/login">Login</a>
-            </Button>
-            <Button
-              variant="outline"
-              className="border-[#2A2A3A] text-[#7A7890] hover:text-[#F5F0E8] hover:border-[#7A7890] bg-transparent px-6 py-3 rounded-lg transition-all duration-500 focus-visible:ring-2 focus-visible:ring-[#7A7890]"
-            >
-              <a
-                href="https://github.com/KrishnaGrg1/slack-clone"
-                target="_blank"
-                rel="noopener noreferrer"
+            <p className="text-base text-[#7A7890] max-w-md mx-auto mb-10 leading-7 reveal">
+              Start a call from any message thread. When it ends, AI posts the
+              decisions and action items back — automatically, to the exact
+              conversation that needed them.
+            </p>
+            <div className="flex items-center gap-4 flex-wrap justify-center mb-16 reveal">
+              <Button className="bg-[#E8A838] hover:bg-[#F0B848] text-[#0A0A0F] font-semibold px-6 py-3 rounded-lg transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(232,168,56,0.25)] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[#E8A838] focus-visible:ring-offset-2">
+                <a href="/login">Login</a>
+              </Button>
+              <Button
+                variant="outline"
+                className="border-[#2A2A3A] text-[#7A7890] hover:text-[#F5F0E8] hover:border-[#7A7890] bg-transparent px-6 py-3 rounded-lg transition-all duration-500 focus-visible:ring-2 focus-visible:ring-[#7A7890]"
               >
-                View on GitHub →
-              </a>
-            </Button>
+                <a
+                  href="https://github.com/KrishnaGrg1/slack-clone"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View on GitHub →
+                </a>
+              </Button>
+            </div>
           </div>
 
-          <HeroDemo />
+          <div className="w-full flex justify-center px-4">
+            <HeroDemo />
+          </div>
         </section>
 
         {/* LOGO STRIP */}

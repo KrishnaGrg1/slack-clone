@@ -40,7 +40,7 @@ import {
   AvatarGroupCount,
 } from '#/components/ui/avatar'
 
-export const Route = createFileRoute('/workspace/$id/')({
+export const Route = createFileRoute('/workspace/$slug/')({
   component: Dashboard,
 })
 
@@ -462,10 +462,7 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-xl bg-[#E8A838]/10 border border-[#E8A838]/20 flex items-center justify-center mb-3">
                 <Hash className="w-5 h-5 text-[#E8A838]" />
               </div>
-              <h2
-                className="text-lg font-semibold text-[#F5F0E8] mb-1"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
+              <h2 className="text-lg font-semibold text-[#F5F0E8] mb-1 font-display">
                 # {activeChannelData?.name}
               </h2>
               <p className="text-xs text-[#4A4860]">
