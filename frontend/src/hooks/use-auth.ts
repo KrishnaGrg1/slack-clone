@@ -1,4 +1,4 @@
-import { redirect, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { login, register } from '#/lib/services/auth.service'
@@ -7,8 +7,7 @@ export function useLogin() {
   const navigate = useNavigate()
   return useMutation({
     mutationFn: login,
-    onSuccess: (data) => {
-      // Save token to cookies
+    onSuccess: () => {
       navigate({ to: '/workspace' })
       toast.success('Login successfully')
     },
@@ -22,8 +21,7 @@ export function useRegister() {
   const navigate = useNavigate()
   return useMutation({
     mutationFn: register,
-    onSuccess: (data) => {
-      // Save token to cookies
+    onSuccess: () => {
       navigate({ to: '/workspace' })
       toast.success('Register successfully')
     },

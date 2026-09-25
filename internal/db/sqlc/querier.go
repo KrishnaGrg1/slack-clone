@@ -19,7 +19,7 @@ type Querier interface {
 	DeleteMessage(ctx context.Context, arg DeleteMessageParams) error
 	DeleteWorkspace(ctx context.Context, arg DeleteWorkspaceParams) error
 	EditMessage(ctx context.Context, arg EditMessageParams) (Message, error)
-	EditWorkspace(ctx context.Context, arg EditWorkspaceParams) error
+	EditWorkspace(ctx context.Context, arg EditWorkspaceParams) (Workspace, error)
 	GenerateWorkspaceInvite(ctx context.Context, arg GenerateWorkspaceInviteParams) (GenerateWorkspaceInviteRow, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
 	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
@@ -32,6 +32,7 @@ type Querier interface {
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
 	GetWorkspaceByInviteCode(ctx context.Context, inviteCode pgtype.Text) (Workspace, error)
+	GetWorkspaceBySlug(ctx context.Context, slug string) (Workspace, error)
 	GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]GetWorkspaceMembersRow, error)
 	GetWorkspacesByUser(ctx context.Context, userID pgtype.UUID) ([]Workspace, error)
 	IsChannelMember(ctx context.Context, arg IsChannelMemberParams) (bool, error)

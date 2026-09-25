@@ -28,7 +28,7 @@ func NewMessageHandler(s *store.Store, h *hub.Hub) *MessageHandler {
 
 // GET /channels/:id/messages
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
-	channelID := chi.URLParam(r, "channelID")
+	channelID := chi.URLParam(r, "id")
 	channelUUID, err := pgutil.ParseToPGUUID(channelID)
 	if err != nil {
 		response.BadRequest(w, "MSG_001", "invalid channel id", "must be a valid UUID")

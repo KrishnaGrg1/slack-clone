@@ -77,10 +77,11 @@ func (q *Queries) DeleteWorkspace(ctx context.Context, arg DeleteWorkspaceParams
 	return err
 }
 
-const editWorkspace = `-- name: EditWorkspace :exec
+const editWorkspace = `-- name: EditWorkspace :one
 UPDATE workspaces
 set name = $1, slug = $2, is_private = $3
 where id = $4 and created_by = $5
+returning id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
 `
 
 type EditWorkspaceParams struct {
@@ -91,15 +92,26 @@ type EditWorkspaceParams struct {
 	CreatedBy pgtype.UUID `json:"created_by"`
 }
 
-func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) error {
-	_, err := q.db.Exec(ctx, editWorkspace,
+func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) (Workspace, error) {
+	row := q.db.QueryRow(ctx, editWorkspace,
 		arg.Name,
 		arg.Slug,
 		arg.IsPrivate,
 		arg.ID,
 		arg.CreatedBy,
 	)
-	return err
+	var i Workspace
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.IsPrivate,
+		&i.InviteCode,
+		&i.InviteExpiresAt,
+	)
+	return i, err
 }
 
 const generateWorkspaceInvite = `-- name: GenerateWorkspaceInvite :one
@@ -171,6 +183,26 @@ WHERE
 
 func (q *Queries) GetWorkspaceByInviteCode(ctx context.Context, inviteCode pgtype.Text) (Workspace, error) {
 	row := q.db.QueryRow(ctx, getWorkspaceByInviteCode, inviteCode)
+	var i Workspace
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Slug,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.IsPrivate,
+		&i.InviteCode,
+		&i.InviteExpiresAt,
+	)
+	return i, err
+}
+
+const getWorkspaceBySlug = `-- name: GetWorkspaceBySlug :one
+SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at FROM workspaces WHERE slug = $1 LIMIT 1
+`
+
+func (q *Queries) GetWorkspaceBySlug(ctx context.Context, slug string) (Workspace, error) {
+	row := q.db.QueryRow(ctx, getWorkspaceBySlug, slug)
 	var i Workspace
 	err := row.Scan(
 		&i.ID,

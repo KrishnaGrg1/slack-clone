@@ -1,44 +1,63 @@
 import { createServerFn } from '@tanstack/react-start'
+import { redirect } from '@tanstack/react-router'
 import { LoginUserSchema, RegisterUserSchema } from '../schema/auth.schema'
 import type {
   LoginResponse,
   UserLoginInput,
   UserRegisterInput,
 } from '../types/auth.type'
-import axiosInstance from '../axios'
+import axiosInstance, { getApiErrorMessage } from '../axios'
+import { useAppSession } from '#/utils/session.server'
+
+async function persistAuthSession(payload: LoginResponse) {
+  const { token, user } = payload.data
+
+  const session = await useAppSession()
+  await session.update({
+    token,
+    userId: user.id,
+    email: user.email,
+  })
+}
 
 export const register = createServerFn({ method: 'POST' })
-  .inputValidator((data) => RegisterUserSchema.parse(data))
+  .validator((data) => RegisterUserSchema.parse(data))
   .handler(async ({ data }) => {
     try {
-      const res = await axiosInstance<UserRegisterInput, LoginResponse>(
-        '/auth/register',
-        {
-          data: data,
-          method: 'POST',
-        },
-      )
+      const res = await axiosInstance<LoginResponse>('/auth/register', {
+        data: data,
+        method: 'POST',
+      })
+
+      await persistAuthSession(res.data)
       return res.data
     } catch (error: unknown) {
-      const err = error as Error
-      throw new Error(err.message || 'Failed to register')
+      throw new Error(
+        getApiErrorMessage(error, 'Failed to register') || 'Failed to register',
+      )
     }
   })
 
 export const login = createServerFn({ method: 'POST' })
-  .inputValidator((data) => LoginUserSchema.parse(data))
+  .validator((data) => LoginUserSchema.parse(data))
   .handler(async ({ data }) => {
     try {
-      const res = await axiosInstance<UserLoginInput, LoginResponse>(
-        '/auth/login',
-        {
-          data: data,
-          method: 'POST',
-        },
-      )
+      const res = await axiosInstance<LoginResponse>('/auth/login', {
+        data: data,
+        method: 'POST',
+      })
+      console.log('arigato', res.data)
+      await persistAuthSession(res.data)
       return res.data
     } catch (error: unknown) {
-      const err = error as Error
-      throw new Error(err.message || 'Failed to login')
+      throw new Error(
+        getApiErrorMessage(error, 'Failed to login') || 'Failed to login',
+      )
     }
   })
+
+export const logoutFn = createServerFn({ method: 'POST' }).handler(async () => {
+  const session = await useAppSession()
+  await session.clear()
+  throw redirect({ to: '/' })
+})

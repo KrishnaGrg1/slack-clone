@@ -2,8 +2,10 @@ package handler
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -108,7 +110,7 @@ func (h *WorkspaceHandler) JoinWorkspace(w http.ResponseWriter, r *http.Request)
 			"WS_002", "invalid user ID")
 		return
 	}
-	workspaceID := chi.URLParam(r, "id")
+	workspaceID := chi.URLParam(r, "workspaceID")
 	workspaceUUID, err := pgutil.ParseToPGUUID(workspaceID)
 	if err != nil {
 		response.BadRequest(w, "WS_003", "invalid workspace ID",
@@ -130,6 +132,7 @@ func (h *WorkspaceHandler) JoinWorkspace(w http.ResponseWriter, r *http.Request)
 	if workspace.IsPrivate.Valid && workspace.IsPrivate.Bool {
 		response.Error(w, http.StatusForbidden, "forbidden",
 			"WS_004", "workspace is private")
+		return
 	}
 	// 3. Verify workspace membership
 	isMember, err := h.store.Queries.IsWorkspaceMember(r.Context(), db.IsWorkspaceMemberParams{
@@ -246,7 +249,7 @@ func (h *WorkspaceHandler) EditWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	workspaceID := chi.URLParam(r, "id")
+	workspaceID := chi.URLParam(r, "workspaceID")
 
 	workspaceUUID, err := pgutil.ParseToPGUUID(workspaceID)
 	if err != nil {
@@ -297,7 +300,7 @@ func (h *WorkspaceHandler) EditWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = h.store.Queries.EditWorkspace(
+	newWorkspace, err := h.store.Queries.EditWorkspace(
 		r.Context(),
 		db.EditWorkspaceParams{
 			Name: req.Name,
@@ -325,7 +328,7 @@ func (h *WorkspaceHandler) EditWorkspace(w http.ResponseWriter, r *http.Request)
 		w,
 		http.StatusOK,
 		"successfully edited workspace",
-		nil,
+		newWorkspace,
 	)
 }
 
@@ -355,7 +358,7 @@ func (h *WorkspaceHandler) DeleteWorkspace(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	workspaceID := chi.URLParam(r, "id")
+	workspaceID := chi.URLParam(r, "workspaceID")
 
 	workspaceUUID, err := pgutil.ParseToPGUUID(workspaceID)
 	if err != nil {
@@ -444,7 +447,7 @@ func (h *WorkspaceHandler) InviteInWorkspace(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	workspaceID := chi.URLParam(r, "id")
+	workspaceID := chi.URLParam(r, "workspaceID")
 
 	workspaceUUID, err := pgutil.ParseToPGUUID(workspaceID)
 	if err != nil {
@@ -580,6 +583,31 @@ func (h *WorkspaceHandler) AcceptInviteLink(w http.ResponseWriter, r *http.Reque
 		)
 		return
 	}
+
+	workspaceMembers, err := h.store.Queries.GetWorkspaceMembers(r.Context(), workspace.ID)
+	if err != nil {
+		response.BadRequest(
+			w,
+			"WS_006",
+			"failed to check workspace membership",
+			err.Error(),
+		)
+		return
+	}
+
+	for _, v := range workspaceMembers {
+		if v.ID == userUUID {
+			response.Error(
+				w,
+				http.StatusBadRequest,
+				"user already in workspace",
+				"WS_007",
+				"user is already a member of this workspace",
+			)
+			return
+		}
+	}
+
 	if err := h.store.Queries.AddWorkspaceMember(r.Context(),
 		db.AddWorkspaceMemberParams{
 			WorkspaceID: workspace.ID,
@@ -588,7 +616,7 @@ func (h *WorkspaceHandler) AcceptInviteLink(w http.ResponseWriter, r *http.Reque
 		}); err != nil {
 		response.BadRequest(
 			w,
-			"WS_006",
+			"WS_008",
 			"failed to add user to workspace",
 			err.Error(),
 		)
@@ -647,6 +675,117 @@ func (h *WorkspaceHandler) GetUserWorkspaces(w http.ResponseWriter, r *http.Requ
 		"user workspaces fetched successfully",
 		map[string]any{
 			"workspaces": workspace,
+		},
+	)
+}
+
+func (h *WorkspaceHandler) GetWorkspaceBySlug(w http.ResponseWriter, r *http.Request) {
+	// 1. Authenticate user from middleware context
+	userID, _, ok := middleware.GetUserDetails(r)
+	if !ok {
+		response.Error(
+			w,
+			http.StatusUnauthorized,
+			"unauthorized",
+			"WS_001",
+			"invalid or missing user session",
+		)
+		return
+	}
+
+	userUUID, err := pgutil.ParseToPGUUID(userID)
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusUnauthorized,
+			"invalid user id",
+			"WS_002",
+			"invalid user ID",
+		)
+		return
+	}
+
+	// 2. Extract and validate path parameter
+	slug := chi.URLParam(r, "slug")
+	if slug == "" {
+		response.Error(
+			w,
+			http.StatusBadRequest,
+			"bad request",
+			"WS_003",
+			"slug parameter is required",
+		)
+		return
+	}
+
+	// 3. Query workspace from store
+	workspace, err := h.store.Queries.GetWorkspaceBySlug(r.Context(), slug)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			response.Error(
+				w,
+				http.StatusNotFound,
+				"not found",
+				"WS_004",
+				"workspace not found",
+			)
+			return
+		}
+
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+			"WS_005",
+			"failed to fetch workspace",
+		)
+		return
+	}
+
+	// 4. Verify membership authorization
+	isMember, err := h.store.Queries.IsWorkspaceMember(r.Context(), db.IsWorkspaceMemberParams{
+		WorkspaceID: workspace.ID,
+		UserID:      userUUID,
+	})
+	if err != nil {
+		response.Error(
+			w,
+			http.StatusInternalServerError,
+			"internal server error",
+			"WS_006",
+			"failed to verify workspace membership",
+		)
+		return
+	}
+
+	if !isMember {
+		response.Error(
+			w,
+			http.StatusForbidden,
+			"forbidden",
+			"WS_007",
+			"you are not a member of this workspace",
+		)
+		return
+	}
+	members, err := h.store.Queries.GetWorkspaceMembers(r.Context(), workspace.ID)
+	if err != nil {
+		response.InternalServerError(
+			w,
+			"CH_009",
+			"failed to fetch channel members",
+			err.Error(),
+		)
+		return
+	}
+	// 5. Return success response
+	response.Success(
+		w,
+		http.StatusOK,
+		"workspace fetched successfully",
+		map[string]any{
+			"workspace": workspace,
+			"members":   members,
 		},
 	)
 }

@@ -65,25 +65,27 @@ func registerProtectedRoutes(
 		r.Get("/user/me", userHandler.GetMe)
 
 		r.Route("/workspaces", func(r chi.Router) {
-			r.Post("/", workspaceHandler.CreateWorkspace)
 			r.Get("/search", workspaceHandler.SearchWorkspace)
+			r.Post("/", workspaceHandler.CreateWorkspace)
 			r.Get("/", workspaceHandler.GetUserWorkspaces)
-			r.Post("/{id}/invite", workspaceHandler.InviteInWorkspace)
 			r.Post("/invite/{invite_code}/join", workspaceHandler.AcceptInviteLink)
-		})
 
-		r.Route("/workspaces/{workspaceID}", func(r chi.Router) {
-			r.Put("/", workspaceHandler.EditWorkspace)
-			r.Post("/join", workspaceHandler.JoinWorkspace)
-			r.Delete("/", workspaceHandler.DeleteWorkspace)
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.WorkspaceAuth(store.Queries))
-				registerWorkspaceRoutes(r, channelHandler, msgHandler)
+			r.Get("/slug/{slug}", workspaceHandler.GetWorkspaceBySlug)
+
+			r.Route("/{workspaceID}", func(r chi.Router) {
+				r.Put("/", workspaceHandler.EditWorkspace)
+				r.Post("/join", workspaceHandler.JoinWorkspace)
+				r.Delete("/", workspaceHandler.DeleteWorkspace)
+				r.Post("/invite", workspaceHandler.InviteInWorkspace)
+
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.WorkspaceAuth(store.Queries))
+					registerWorkspaceRoutes(r, channelHandler, msgHandler)
+				})
 			})
 		})
 	})
 }
-
 func registerWorkspaceRoutes(
 	r chi.Router,
 	channelHandler *handler.ChannelHandler,

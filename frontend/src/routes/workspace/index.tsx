@@ -6,40 +6,16 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 
-import { getMe } from '#/lib/services/user.services'
-import { GetUserWorkspaces } from '#/lib/services/workspace.service'
 import type { Workspace } from '#/lib/types/workspace.type'
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, getRouteApi } from '@tanstack/react-router'
 import { ArrowRight, Building2, Plus } from 'lucide-react'
-import { Button } from '#/components/ui/button'
+
 import { Separator } from '#/components/ui/separator'
 import { cn } from '#/lib/utils'
-import { useState } from 'react'
-import { UserData, WorkspaceData } from '#/components/workspace/mock'
+
+const parentRoute = getRouteApi('/workspace')
 
 export const Route = createFileRoute('/workspace/')({
-  loader: async () => {
-    // let user = null,
-    //   workspaces = null
-
-    const user = UserData
-    const workspace = WorkspaceData
-    try {
-      // user = await getMe()
-      // workspaces = await GetUserWorkspaces()
-    } catch {
-      throw redirect({ to: '/login' })
-    }
-
-    // if (!user || !workspaces) throw redirect({ to: '/login' })
-
-    return {
-      // user: user.data.user,
-      // workspaces: workspaces.data.workspaces ?? [],
-      user: user,
-      workspaces: workspace ?? [],
-    }
-  },
   component: RouteComponent,
 })
 
@@ -59,9 +35,10 @@ function WorkspaceAvatar({ name }: { name: string }) {
 }
 
 function RouteComponent() {
-  const { user, workspaces } = Route.useLoaderData()
-
-  const hasWorkspaces = workspaces.length > 0
+  const { user, workspaces } = parentRoute.useLoaderData()
+  console.log('data', user)
+  console.log('workspace', workspaces)
+  const hasWorkspaces = workspaces.workspaces.length > 0
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
@@ -104,7 +81,7 @@ function RouteComponent() {
             {/* ── workspace list ── */}
             {hasWorkspaces && (
               <div className="divide-y divide-[#1E1E2A]">
-                {workspaces.map((workspace: Workspace) => (
+                {workspaces.workspaces.map((workspace: Workspace) => (
                   <Link
                     key={workspace.id}
                     to="/workspace/$slug"

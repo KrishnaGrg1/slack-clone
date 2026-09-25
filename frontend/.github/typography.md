@@ -161,18 +161,18 @@ Validation errors, destructive actions
 
 Font + color pairings
 
-| Variant | Font | Size / Weight | Color token | Where used |
-| --- | --- | --- | --- | --- |
-| display | DM Sans | 48px · 300 | #F5F0E8 | Landing hero only |
-| h1 | DM Sans | 32px · 400 | #F5F0E8 | Page headings, auth welcome |
-| h2 | DM Sans | 22px · 400 | #F5F0E8 | Card headers, workspace title |
-| h3 | DM Sans | 16px · 500 | #F5F0E8 | Workspace names, card titles |
-| body-lg | Inter | 15px · 400 | #7A7890 | Hero sub, landing descriptions |
-| body | Inter | 13px · 400 | #7A7890 | Card descriptions, workspace sub |
-| label | Inter | 11px · 500 | #B8B5C5 | Form labels, section labels |
-| overline | DM Mono | 10px · 500 | #E8A838 | Eyebrows, badges, nav tags |
-| caption | Inter | 10px · 400 | #4A4860 | Workspace slugs, timestamps, legal |
-| error | Inter | 10px · 400 | #E05555 | Form validation, error alerts |
+| Variant  | Font    | Size / Weight | Color token | Where used                         |
+| -------- | ------- | ------------- | ----------- | ---------------------------------- |
+| display  | DM Sans | 48px · 300    | #F5F0E8     | Landing hero only                  |
+| h1       | DM Sans | 32px · 400    | #F5F0E8     | Page headings, auth welcome        |
+| h2       | DM Sans | 22px · 400    | #F5F0E8     | Card headers, workspace title      |
+| h3       | DM Sans | 16px · 500    | #F5F0E8     | Workspace names, card titles       |
+| body-lg  | Inter   | 15px · 400    | #7A7890     | Hero sub, landing descriptions     |
+| body     | Inter   | 13px · 400    | #7A7890     | Card descriptions, workspace sub   |
+| label    | Inter   | 11px · 500    | #B8B5C5     | Form labels, section labels        |
+| overline | DM Mono | 10px · 500    | #E8A838     | Eyebrows, badges, nav tags         |
+| caption  | Inter   | 10px · 400    | #4A4860     | Workspace slugs, timestamps, legal |
+| error    | Inter   | 10px · 400    | #E05555     | Form validation, error alerts      |
 
 Badges & chips
 
@@ -187,7 +187,7 @@ Landing — hero section
 Open source · Built in Go
 
 Conversations that\
-*remember themselves*
+_remember themselves_
 
 Start a call from any message thread. When it ends, AI posts the decisions and action items back — automatically, to the exact conversation that needed them.
 

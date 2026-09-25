@@ -6,37 +6,17 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import CreateWorkspaceForm from '#/components/workspace/createWorkspace'
-import { getMe } from '#/lib/services/user.services'
-import { GetUserWorkspaces } from '#/lib/services/workspace.service'
-import type { Workspace } from '#/lib/types/workspace.type'
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
-import { ArrowRight, Building2, Plus } from 'lucide-react'
-import { Button } from '#/components/ui/button'
-import { Separator } from '#/components/ui/separator'
-import { cn } from '#/lib/utils'
 import { UserData, WorkspaceData } from '#/components/workspace/mock'
+import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/workspace/create')({
   loader: async () => {
-    // let user = null,
-    //   workspaces = null
-
     const user = UserData
-    const workspace = WorkspaceData
-    try {
-      // user = await getMe()
-      // workspaces = await GetUserWorkspaces()
-    } catch {
-      throw redirect({ to: '/login' })
-    }
-
-    // if (!user || !workspaces) throw redirect({ to: '/login' })
+    const workspaces = WorkspaceData
 
     return {
-      // user: user.data.user,
-      // workspaces: workspaces.data.workspaces ?? [],
-      user: user,
-      workspaces: workspace ?? [],
+      user,
+      workspaces,
     }
   },
   component: RouteComponent,

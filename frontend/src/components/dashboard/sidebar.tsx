@@ -21,13 +21,18 @@ import {
 } from '@/components/ui/tooltip'
 
 import { cn } from '@/lib/utils'
-import { CHANNELS, ONLINE_MEMBERS } from './mock'
+import type { Channel, Channel_Members } from '@/lib/types/channel.type'
+import type { User } from '#/lib/types/auth.type'
 
 export default function Sidebar({
-  activeChannel,
+  channels,
+  members,
+  user,
   onChannelSelect,
 }: {
-  activeChannel: string
+  channels: Channel[]
+  members: Channel_Members[]
+  user: User
   onChannelSelect: (id: string) => void
 }) {
   return (
@@ -88,7 +93,7 @@ export default function Sidebar({
             </div>
 
             <div className="space-y-0.5">
-              {CHANNELS.map((ch) => (
+              {channels.map((ch) => (
                 <Button
                   key={ch.id}
                   variant="ghost"
@@ -96,23 +101,25 @@ export default function Sidebar({
                   className={cn(
                     'w-full justify-start gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
                     'hover:text-[#F5F0E8] hover:bg-[#16161F]',
-                    activeChannel === ch.id
-                      ? 'bg-[#E8A838]/10 text-[#F5F0E8] hover:bg-[#E8A838]/10'
-                      : 'text-[#7A7890]',
+                    // activeChannel === ch.id
+                    //   ? 'bg-[#E8A838]/10 text-[#F5F0E8] hover:bg-[#E8A838]/10'
+                    //   :
+
+                    'text-[#7A7890]',
                   )}
                 >
                   <Hash className="h-3.5 w-3.5 shrink-0" />
 
                   <span className="text-xs flex-1 truncate">{ch.name}</span>
 
-                  {ch.unread > 0 && (
+                  {/* {ch.unread > 0 && (
                     <Badge
                       variant="secondary"
                       className="h-4 min-w-4 px-1 bg-[#E8A838] text-[#0A0A0F] text-[9px] font-bold rounded-full hover:bg-[#E8A838]"
                     >
                       {ch.unread}
                     </Badge>
-                  )}
+                  )} */}
                 </Button>
               ))}
             </div>
@@ -129,7 +136,7 @@ export default function Sidebar({
             </div>
 
             <div className="space-y-0.5">
-              {ONLINE_MEMBERS.map((m) => (
+              {members.map((m) => (
                 <Button
                   key={m.id}
                   variant="ghost"
@@ -144,17 +151,18 @@ export default function Sidebar({
                           : 'bg-[#1D9E75] text-[#0A0A0F]',
                       )}
                     >
-                      {m.avatar}
+                      {m.avatar_url}
                     </AvatarFallback>
                     <AvatarBadge
                       className={cn(
                         'h-2 w-2 border border-[#111118]',
-                        m.online ? 'bg-[#1D9E75]' : 'bg-[#4A4860]',
+                        // m.online ? 'bg-[#1D9E75]' :
+                        'bg-[#4A4860]',
                       )}
                     />
                   </Avatar>
 
-                  <span className="text-xs truncate">{m.name}</span>
+                  <span className="text-xs truncate">{m.username}</span>
                 </Button>
               ))}
             </div>
@@ -165,13 +173,13 @@ export default function Sidebar({
         <div className="h-12 flex items-center gap-2 px-3 border-t border-[#2A2A3A] shrink-0">
           <Avatar className="h-7 w-7 rounded-md shrink-0">
             <AvatarFallback className="rounded-md bg-[#E8A838] text-[#0A0A0F] text-xs font-bold">
-              K
+              {user.avatar_url ?? user.username}
             </AvatarFallback>
             <AvatarBadge className="h-2 w-2 bg-[#1D9E75] border border-[#111118]" />
           </Avatar>
 
           <span className="text-xs font-medium text-[#F5F0E8] flex-1 truncate">
-            krishna
+            {user.username}
           </span>
 
           <div className="flex items-center gap-0.5">

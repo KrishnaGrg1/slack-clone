@@ -22,6 +22,10 @@ export interface LoginResponse {
   message: string
   data: {
     token: string
-    user: User
+    user: {
+      id: string
+      username: string
+      email: string
+    }
   }
 }

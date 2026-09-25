@@ -1,15 +1,16 @@
-export interface Channels {
+export interface Channel {
   id: string
+  workspace_id: string
   name: string
-  is_private: boolean
+  channel_type: string
   created_by: string
   created_at: string
 }
 export interface Channel_Members {
-  channel_id: string
-  user_id: string
-  joined_at: string
-  last_read: string
+  id: string
+  username: string
+  email: string
+  avatar_url: string
 }
 
 export interface CreateChannelInput {
@@ -19,13 +20,13 @@ export interface CreateChannelInput {
 export interface CreateChannelResponse {
   success: boolean
   message: string
-  data: Channels
+  data: Channel
 }
 
 export interface GetAllChannelResponse {
   success: boolean
   message: string
-  data: Channels[]
+  data: Channel[]
 }
 
 export interface GetChannelByIDInput {
@@ -34,7 +35,10 @@ export interface GetChannelByIDInput {
 export interface GetChannelResponse {
   success: boolean
   message: string
-  data: Channels
+  data: {
+    channel: Channel
+    channel_members: Channel_Members[]
+  }
 }
 
 export interface JoinChannelInput {
@@ -43,7 +47,7 @@ export interface JoinChannelInput {
 export interface JoinChannelResponse {
   success: boolean
   message: string
-  data: Channels
+  data: Channel
 }
 
 export interface LeaveChannelInput {

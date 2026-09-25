@@ -14,7 +14,7 @@ export default function CreateWorkspaceForm() {
     defaultValues: {
       name: '',
       slug: '',
-      isPrivate: true,
+      is_private: true,
     },
     onSubmit: async ({ value }) => {
       mutate({ data: value })
@@ -161,12 +161,9 @@ export default function CreateWorkspaceForm() {
       </form.Field>
 
       <form.Field
-        name="isPrivate"
+        name="is_private"
         validators={{
-          onChange: ({ value }) =>
-            value === undefined
-              ? 'Workspace visibility is required'
-              : undefined,
+          onChange: () => undefined,
         }}
       >
         {(field) => {
@@ -204,7 +201,9 @@ export default function CreateWorkspaceForm() {
                   <Switch
                     id={field.name}
                     checked={isPrivate}
-                    onCheckedChange={(value) => field.handleChange(value)}
+                    onCheckedChange={(value) =>
+                      field.handleChange(Boolean(value))
+                    }
                     aria-label={`Workspace visibility: ${
                       isPrivate ? 'Private' : 'Public'
                     }`}

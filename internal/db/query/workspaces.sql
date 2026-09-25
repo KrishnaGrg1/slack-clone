@@ -54,10 +54,11 @@ ORDER BY created_at DESC
 LIMIT sqlc.arg(page_limit)::int
 OFFSET sqlc.arg(page_offset)::int;
 
--- name: EditWorkspace :exec
+-- name: EditWorkspace :one
 UPDATE workspaces
 set name = $1, slug = $2, is_private = $3
-where id = $4 and created_by = $5;
+where id = $4 and created_by = $5
+returning *;
 
 -- name: DeleteWorkspace :exec
 DELETE From workspaces
@@ -84,3 +85,7 @@ WHERE
       invite_expires_at IS NULL
       OR invite_expires_at > NOW()
   );
+
+
+-- name: GetWorkspaceBySlug :one
+SELECT * FROM workspaces WHERE slug = $1 LIMIT 1;
