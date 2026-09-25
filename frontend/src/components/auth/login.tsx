@@ -30,7 +30,7 @@ export default function LoginForm() {
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="w-full"
+      className="w-full space-y-3"
     >
       {/* SERVER ERROR */}
       {loginError && (

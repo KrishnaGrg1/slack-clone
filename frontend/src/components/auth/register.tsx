@@ -7,6 +7,7 @@ import { useRegister } from '#/hooks/use-auth'
 import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'
 import { Input } from '#/components/ui/input'
+import { Typography } from '#/components/ui/typography'
 
 export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -34,13 +35,16 @@ export default function RegisterForm() {
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="w-full"
+      className="w-full space-y-3"
     >
       {/* SERVER ERROR */}
       {registerError && (
         <Alert className="rounded-lg border-[#E05555]/25 bg-[#E05555]/[0.06] px-3 py-2.5">
-          <AlertDescription className="text-xs text-[#E05555]">
-            {registerError.message || 'Something went wrong. Please try again.'}
+          <AlertDescription>
+            <Typography variant="caption" className="text-[#E05555]">
+              {registerError.message ||
+                'Something went wrong. Please try again.'}
+            </Typography>
           </AlertDescription>
         </Alert>
       )}
@@ -61,12 +65,15 @@ export default function RegisterForm() {
           const hasError = field.state.meta.errors.length > 0
           return (
             <div className="space-y-1">
-              <div>
-                <Label
-                  htmlFor={field.name}
-                  className="block text-[11px] font-medium text-[#B8B5C5]"
-                >
-                  Username
+              <div className="flex items-center justify-between">
+                <Label htmlFor={field.name} className="block">
+                  <Typography
+                    as="span"
+                    variant="label"
+                    className="text-[#B8B5C5]"
+                  >
+                    Username
+                  </Typography>
                 </Label>
               </div>
               <Input
@@ -90,12 +97,14 @@ export default function RegisterForm() {
                 )}
               />
               {hasError && (
-                <p
+                <Typography
+                  as="p"
                   id={`error-${field.name}`}
-                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                  variant="caption"
+                  className="mt-1 text-left text-[#E05555]"
                 >
                   {field.state.meta.errors[0]}
-                </p>
+                </Typography>
               )}
             </div>
           )
@@ -118,12 +127,15 @@ export default function RegisterForm() {
           const hasError = field.state.meta.errors.length > 0
           return (
             <div className="space-y-1">
-              <div>
-                <Label
-                  htmlFor={field.name}
-                  className="block text-[11px] font-medium text-[#B8B5C5]"
-                >
-                  Email
+              <div className="flex items-center justify-between">
+                <Label htmlFor={field.name} className="block">
+                  <Typography
+                    as="span"
+                    variant="label"
+                    className="text-[#B8B5C5]"
+                  >
+                    Email
+                  </Typography>
                 </Label>
               </div>
               <Input
@@ -147,12 +159,14 @@ export default function RegisterForm() {
                 )}
               />
               {hasError && (
-                <p
+                <Typography
+                  as="p"
                   id={`error-${field.name}`}
-                  className="mt-1 text-left text-[10px] text-[#E05555]"
+                  variant="caption"
+                  className="mt-1 text-left text-[#E05555]"
                 >
                   {field.state.meta.errors[0]}
-                </p>
+                </Typography>
               )}
             </div>
           )
@@ -174,13 +188,16 @@ export default function RegisterForm() {
         {(field) => {
           const hasError = field.state.meta.errors.length > 0
           return (
-            <div>
-              <div className="mb-1.5">
-                <Label
-                  htmlFor={field.name}
-                  className="block text-[11px] font-medium text-[#B8B5C5]"
-                >
-                  Password
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={field.name} className="block">
+                  <Typography
+                    as="span"
+                    variant="label"
+                    className="text-[#B8B5C5]"
+                  >
+                    Password
+                  </Typography>
                 </Label>
               </div>
               <div className="relative">
@@ -218,9 +235,13 @@ export default function RegisterForm() {
                 </button>
               </div>
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <Typography
+                  as="p"
+                  variant="caption"
+                  className="mt-1 text-left text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
-                </p>
+                </Typography>
               )}
             </div>
           )
@@ -243,13 +264,16 @@ export default function RegisterForm() {
         {(field) => {
           const hasError = field.state.meta.errors.length > 0
           return (
-            <div>
-              <div className="mb-1.5">
-                <Label
-                  htmlFor={field.name}
-                  className="block text-[11px] font-medium text-[#B8B5C5]"
-                >
-                  Confirm Password
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor={field.name} className="block">
+                  <Typography
+                    as="span"
+                    variant="label"
+                    className="text-[#B8B5C5]"
+                  >
+                    Confirm Password
+                  </Typography>
                 </Label>
               </div>
               <div className="relative">
@@ -289,9 +313,13 @@ export default function RegisterForm() {
                 </button>
               </div>
               {hasError && (
-                <p className="mt-1 text-left text-[10px] text-[#E05555]">
+                <Typography
+                  as="p"
+                  variant="caption"
+                  className="mt-1 text-left text-[#E05555]"
+                >
                   {field.state.meta.errors[0]}
-                </p>
+                </Typography>
               )}
             </div>
           )
@@ -301,13 +329,12 @@ export default function RegisterForm() {
       {/* SUBMIT */}
 
       {/* BUTTON */}
-      <div className="mt-2">
+      <div className="mt-1">
         <Button
           type="submit"
           disabled={isPending}
           className={cn(
             'h-10 w-full rounded-lg cursor-pointer',
-            'text-sm font-semibold',
             'bg-[#E8A838] text-[#0A0A0F]',
             'hover:bg-[#F0B848]',
             'transition-all duration-500',
@@ -323,10 +350,14 @@ export default function RegisterForm() {
           {isPending ? (
             <span className="flex items-center justify-center gap-2">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#0A0A0F]/30 border-t-[#0A0A0F]" />
-              Creating account...
+              <Typography as="span" variant="h4" className="text-[#0A0A0F]">
+                Creating account...
+              </Typography>
             </span>
           ) : (
-            'Create account'
+            <Typography as="span" variant="h4" className="text-[#0A0A0F]">
+              Create account
+            </Typography>
           )}
         </Button>
       </div>

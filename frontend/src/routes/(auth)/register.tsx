@@ -3,6 +3,7 @@ import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Button } from '#/components/ui/button'
+import { Typography } from '#/components/ui/typography'
 import RegisterForm from '#/components/auth/register'
 
 export const Route = createFileRoute('/(auth)/register')({
@@ -17,22 +18,29 @@ function RouteComponent() {
         {/* Logo — identical to NavBar */}
         <div className="text-center mb-8">
           <div className="mb-6">
-            <a
-              href="/"
-              className="text-2xl font-display font-semibold text-[#F5F0E8]"
-            >
-              Thread<span className="text-[#E8A838]">Call</span>
+            <a href="/" className="inline-block no-underline">
+              <Typography
+                as="span"
+                variant="h2"
+                className="font-display text-[#F5F0E8] tracking-[-0.02em]"
+              >
+                Thread<span className="text-[#E8A838]">Call</span>
+              </Typography>
             </a>
           </div>
-          <p className="text-sm text-[#7A7890] mb-6 leading-6">
+          <Typography variant="body" className="mb-6 text-[#7A7890]">
             Create your account. Your first workspace is free.
-          </p>
+          </Typography>
           <Card className="border-[#2A2A3A] bg-[#16161F] rounded-2xl overflow-hidden shadow-2xl">
             {/* Window chrome — same as HeroDemo */}
             <div className="flex items-center gap-2 px-4 py-3 bg-[#111118] border-b border-[#2A2A3A]">
-              <span className="ml-2 text-xs text-[#7A7890]">
+              <Typography
+                as="span"
+                variant="caption"
+                className="ml-2 text-[#7A7890]"
+              >
                 ThreadCall — Create an account
-              </span>
+              </Typography>
             </div>
 
             {/* Tab switcher */}
@@ -74,7 +82,10 @@ function RouteComponent() {
             <Separator className="bg-[#2A2A3A]" />
 
             <CardFooter className="px-5 py-4 flex justify-center">
-              <p className="text-[10px] text-[#4A4860] text-center">
+              <Typography
+                variant="caption"
+                className="text-center text-[#4A4860]"
+              >
                 By continuing you agree to our{' '}
                 <a
                   href="/terms"
@@ -89,19 +100,19 @@ function RouteComponent() {
                 >
                   privacy policy
                 </a>
-              </p>
+              </Typography>
             </CardFooter>
           </Card>
 
           {/* Back link */}
-          <p className="text-center mt-6">
-            <a
-              href="/"
-              className="text-[12px] text-[#7A7890] hover:text-[#F5F0E8] transition-colors"
-            >
+          {/* <Typography
+            variant="body-sm"
+            className="mt-6 text-center text-[#7A7890]"
+          >
+            <a href="/" className="hover:text-[#F5F0E8] transition-colors">
               ← Back to home
             </a>
-          </p>
+          </Typography> */}
         </div>
       </div>
     </div>
