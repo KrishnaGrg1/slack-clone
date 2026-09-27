@@ -27,7 +27,7 @@ type Querier interface {
 	GetChannels(ctx context.Context) ([]Channel, error)
 	GetChannelsByWorkspace(ctx context.Context, arg GetChannelsByWorkspaceParams) ([]Channel, error)
 	GetMessageByID(ctx context.Context, id pgtype.UUID) (Message, error)
-	GetThreadMessages(ctx context.Context, parentID pgtype.UUID) ([]GetThreadMessagesRow, error)
+	GetThreadMessages(ctx context.Context, threadID pgtype.UUID) ([]GetThreadMessagesRow, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByUserId(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)

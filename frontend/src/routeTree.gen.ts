@@ -14,11 +14,10 @@ import { Route as WorkspaceRouteRouteImport } from './routes/workspace/route'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as WorkspaceIndexRouteImport } from './routes/workspace/index'
+import { Route as WorkspaceSlugRouteRouteImport } from './routes/workspace/$slug/route'
 import { Route as WorkspaceCreateRouteImport } from './routes/workspace/create'
-import { Route as WorkspaceSlugIndexRouteImport } from './routes/workspace/$slug/index'
 import { Route as WorkspaceSlugDmUserIdRouteImport } from './routes/workspace/$slug/dm/$userId'
-import { Route as WorkspaceChannelIdIndexRouteImport } from './routes/workspace/channel/$id/index'
-import { Route as WorkspaceChannelIdThreadThreadIDIndexRouteImport } from './routes/workspace/channel/$id/thread/$threadID/index'
+import { Route as WorkspaceSlugChannelIdIndexRouteImport } from './routes/workspace/$slug/channel/$id/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,105 +44,94 @@ const WorkspaceIndexRoute = WorkspaceIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkspaceRouteRoute,
 } as any)
+const WorkspaceSlugRouteRoute = WorkspaceSlugRouteRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => WorkspaceRouteRoute,
+} as any)
 const WorkspaceCreateRoute = WorkspaceCreateRouteImport.update({
   id: '/create',
   path: '/create',
   getParentRoute: () => WorkspaceRouteRoute,
 } as any)
-const WorkspaceSlugIndexRoute = WorkspaceSlugIndexRouteImport.update({
-  id: '/$slug/',
-  path: '/$slug/',
-  getParentRoute: () => WorkspaceRouteRoute,
-} as any)
 const WorkspaceSlugDmUserIdRoute = WorkspaceSlugDmUserIdRouteImport.update({
-  id: '/$slug/dm/$userId',
-  path: '/$slug/dm/$userId',
-  getParentRoute: () => WorkspaceRouteRoute,
+  id: '/dm/$userId',
+  path: '/dm/$userId',
+  getParentRoute: () => WorkspaceSlugRouteRoute,
 } as any)
-const WorkspaceChannelIdIndexRoute = WorkspaceChannelIdIndexRouteImport.update({
-  id: '/channel/$id/',
-  path: '/channel/$id/',
-  getParentRoute: () => WorkspaceRouteRoute,
-} as any)
-const WorkspaceChannelIdThreadThreadIDIndexRoute =
-  WorkspaceChannelIdThreadThreadIDIndexRouteImport.update({
-    id: '/channel/$id/thread/$threadID/',
-    path: '/channel/$id/thread/$threadID/',
-    getParentRoute: () => WorkspaceRouteRoute,
+const WorkspaceSlugChannelIdIndexRoute =
+  WorkspaceSlugChannelIdIndexRouteImport.update({
+    id: '/channel/$id/',
+    path: '/channel/$id/',
+    getParentRoute: () => WorkspaceSlugRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/workspace': typeof WorkspaceRouteRouteWithChildren
+  '/workspace/$slug': typeof WorkspaceSlugRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace/': typeof WorkspaceIndexRoute
-  '/workspace/$slug/': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
-  '/workspace/channel/$id/': typeof WorkspaceChannelIdIndexRoute
-  '/workspace/channel/$id/thread/$threadID/': typeof WorkspaceChannelIdThreadThreadIDIndexRoute
+  '/workspace/$slug/channel/$id/': typeof WorkspaceSlugChannelIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/workspace/$slug': typeof WorkspaceSlugRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace': typeof WorkspaceIndexRoute
-  '/workspace/$slug': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
-  '/workspace/channel/$id': typeof WorkspaceChannelIdIndexRoute
-  '/workspace/channel/$id/thread/$threadID': typeof WorkspaceChannelIdThreadThreadIDIndexRoute
+  '/workspace/$slug/channel/$id': typeof WorkspaceSlugChannelIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/workspace': typeof WorkspaceRouteRouteWithChildren
+  '/workspace/$slug': typeof WorkspaceSlugRouteRouteWithChildren
   '/(auth)/login': typeof authLoginRoute
   '/(auth)/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace/': typeof WorkspaceIndexRoute
-  '/workspace/$slug/': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
-  '/workspace/channel/$id/': typeof WorkspaceChannelIdIndexRoute
-  '/workspace/channel/$id/thread/$threadID/': typeof WorkspaceChannelIdThreadThreadIDIndexRoute
+  '/workspace/$slug/channel/$id/': typeof WorkspaceSlugChannelIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/workspace'
+    | '/workspace/$slug'
     | '/login'
     | '/register'
     | '/workspace/create'
     | '/workspace/'
-    | '/workspace/$slug/'
     | '/workspace/$slug/dm/$userId'
-    | '/workspace/channel/$id/'
-    | '/workspace/channel/$id/thread/$threadID/'
+    | '/workspace/$slug/channel/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/workspace/$slug'
     | '/login'
     | '/register'
     | '/workspace/create'
     | '/workspace'
-    | '/workspace/$slug'
     | '/workspace/$slug/dm/$userId'
-    | '/workspace/channel/$id'
-    | '/workspace/channel/$id/thread/$threadID'
+    | '/workspace/$slug/channel/$id'
   id:
     | '__root__'
     | '/'
     | '/workspace'
+    | '/workspace/$slug'
     | '/(auth)/login'
     | '/(auth)/register'
     | '/workspace/create'
     | '/workspace/'
-    | '/workspace/$slug/'
     | '/workspace/$slug/dm/$userId'
-    | '/workspace/channel/$id/'
-    | '/workspace/channel/$id/thread/$threadID/'
+    | '/workspace/$slug/channel/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceIndexRouteImport
       parentRoute: typeof WorkspaceRouteRoute
     }
+    '/workspace/$slug': {
+      id: '/workspace/$slug'
+      path: '/$slug'
+      fullPath: '/workspace/$slug'
+      preLoaderRoute: typeof WorkspaceSlugRouteRouteImport
+      parentRoute: typeof WorkspaceRouteRoute
+    }
     '/workspace/create': {
       id: '/workspace/create'
       path: '/create'
@@ -197,54 +192,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceCreateRouteImport
       parentRoute: typeof WorkspaceRouteRoute
     }
-    '/workspace/$slug/': {
-      id: '/workspace/$slug/'
-      path: '/$slug'
-      fullPath: '/workspace/$slug/'
-      preLoaderRoute: typeof WorkspaceSlugIndexRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
-    }
     '/workspace/$slug/dm/$userId': {
       id: '/workspace/$slug/dm/$userId'
-      path: '/$slug/dm/$userId'
+      path: '/dm/$userId'
       fullPath: '/workspace/$slug/dm/$userId'
       preLoaderRoute: typeof WorkspaceSlugDmUserIdRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      parentRoute: typeof WorkspaceSlugRouteRoute
     }
-    '/workspace/channel/$id/': {
-      id: '/workspace/channel/$id/'
+    '/workspace/$slug/channel/$id/': {
+      id: '/workspace/$slug/channel/$id/'
       path: '/channel/$id'
-      fullPath: '/workspace/channel/$id/'
-      preLoaderRoute: typeof WorkspaceChannelIdIndexRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
-    }
-    '/workspace/channel/$id/thread/$threadID/': {
-      id: '/workspace/channel/$id/thread/$threadID/'
-      path: '/channel/$id/thread/$threadID'
-      fullPath: '/workspace/channel/$id/thread/$threadID/'
-      preLoaderRoute: typeof WorkspaceChannelIdThreadThreadIDIndexRouteImport
-      parentRoute: typeof WorkspaceRouteRoute
+      fullPath: '/workspace/$slug/channel/$id/'
+      preLoaderRoute: typeof WorkspaceSlugChannelIdIndexRouteImport
+      parentRoute: typeof WorkspaceSlugRouteRoute
     }
   }
 }
 
+interface WorkspaceSlugRouteRouteChildren {
+  WorkspaceSlugDmUserIdRoute: typeof WorkspaceSlugDmUserIdRoute
+  WorkspaceSlugChannelIdIndexRoute: typeof WorkspaceSlugChannelIdIndexRoute
+}
+
+const WorkspaceSlugRouteRouteChildren: WorkspaceSlugRouteRouteChildren = {
+  WorkspaceSlugDmUserIdRoute: WorkspaceSlugDmUserIdRoute,
+  WorkspaceSlugChannelIdIndexRoute: WorkspaceSlugChannelIdIndexRoute,
+}
+
+const WorkspaceSlugRouteRouteWithChildren =
+  WorkspaceSlugRouteRoute._addFileChildren(WorkspaceSlugRouteRouteChildren)
+
 interface WorkspaceRouteRouteChildren {
+  WorkspaceSlugRouteRoute: typeof WorkspaceSlugRouteRouteWithChildren
   WorkspaceCreateRoute: typeof WorkspaceCreateRoute
   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
-  WorkspaceSlugIndexRoute: typeof WorkspaceSlugIndexRoute
-  WorkspaceSlugDmUserIdRoute: typeof WorkspaceSlugDmUserIdRoute
-  WorkspaceChannelIdIndexRoute: typeof WorkspaceChannelIdIndexRoute
-  WorkspaceChannelIdThreadThreadIDIndexRoute: typeof WorkspaceChannelIdThreadThreadIDIndexRoute
 }
 
 const WorkspaceRouteRouteChildren: WorkspaceRouteRouteChildren = {
+  WorkspaceSlugRouteRoute: WorkspaceSlugRouteRouteWithChildren,
   WorkspaceCreateRoute: WorkspaceCreateRoute,
   WorkspaceIndexRoute: WorkspaceIndexRoute,
-  WorkspaceSlugIndexRoute: WorkspaceSlugIndexRoute,
-  WorkspaceSlugDmUserIdRoute: WorkspaceSlugDmUserIdRoute,
-  WorkspaceChannelIdIndexRoute: WorkspaceChannelIdIndexRoute,
-  WorkspaceChannelIdThreadThreadIDIndexRoute:
-    WorkspaceChannelIdThreadThreadIDIndexRoute,
 }
 
 const WorkspaceRouteRouteWithChildren = WorkspaceRouteRoute._addFileChildren(

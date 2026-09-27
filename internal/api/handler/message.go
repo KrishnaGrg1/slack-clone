@@ -72,7 +72,6 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, http.StatusOK, "messages fetched", map[string]any{
 		"messages": msgs,
-		"source":   "db",
 	})
 }
 

@@ -67,7 +67,7 @@ export interface Message {
   channel_id: string
   sender_id: string
   content: string
-  parent_id: string
+  thread_id: string
   msg_type: string
   created_at: string
   edited_at: string
@@ -77,5 +77,7 @@ export interface Message {
 export interface GetChannelMessageResponse {
   success: boolean
   message: string
-  data: Message[]
+  data: {
+    messages: Message[]
+  }
 }

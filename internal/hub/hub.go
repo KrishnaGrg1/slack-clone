@@ -65,49 +65,49 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			// if _, ok := h.rooms[client.roomID]; !ok {
-			// 	h.rooms[client.roomID] = make(map[*Client]bool)
+			// if _, ok := h.rooms[client.channelID]; !ok {
+			// 	h.rooms[client.channelID] = make(map[*Client]bool)
 			// }
-			// h.rooms[client.roomID][client] = true
-			if _, ok := h.rooms[client.roomID]; !ok {
-				h.rooms[client.roomID] = make(map[*Client]bool)
+			// h.rooms[client.channelID][client] = true
+			if _, ok := h.rooms[client.channelID]; !ok {
+				h.rooms[client.channelID] = make(map[*Client]bool)
 			}
-			h.rooms[client.roomID][client] = true
+			h.rooms[client.channelID][client] = true
 			h.users[client.senderID] = client
-			log.Printf("%s joined room %s", client.senderName, client.roomID)
+			log.Printf("%s joined room %s", client.senderName, client.channelID)
 
 		case client := <-h.unregister:
-			// if room, ok := h.rooms[client.roomID]; ok {
+			// if room, ok := h.rooms[client.channelID]; ok {
 			// 	if _, exists := room[client]; exists {
 			// 		delete(room, client)
 			// 		close(client.send)
 			// 		if len(room) == 0 {
-			// 			delete(h.rooms, client.roomID)
+			// 			delete(h.rooms, client.channelID)
 			// 		}
 			// 	}
 			// }
-			if room, ok := h.rooms[client.roomID]; ok {
-				if _, exists := h.rooms[client.roomID][client]; exists {
+			if room, ok := h.rooms[client.channelID]; ok {
+				if _, exists := h.rooms[client.channelID][client]; exists {
 					delete(room, client)
 					close(client.send)
 					if len(room) == 0 {
-						delete(h.rooms, client.roomID)
+						delete(h.rooms, client.channelID)
 					}
 				}
 			}
 			delete(h.users, client.senderID)
 		case message := <-h.broadcast:
-			room, ok := h.rooms[message.RoomID]
+			room, ok := h.rooms[message.ChannelID]
 			if !ok {
 				continue
 			}
 
 			// push to ring buffer
 			h.historyMu.Lock()
-			buf, ok := h.history[message.RoomID]
+			buf, ok := h.history[message.ChannelID]
 			if !ok {
 				buf = dsa.NewRingBuffer[Message](historyCapacity)
-				h.history[message.RoomID] = buf
+				h.history[message.ChannelID] = buf
 			}
 			h.historyMu.Unlock()
 			buf.Push(message)
@@ -125,17 +125,17 @@ func (h *Hub) Run() {
 					close(client.send)
 					delete(room, client)
 					if len(room) == 0 {
-						delete(h.rooms, message.RoomID)
+						delete(h.rooms, message.ChannelID)
 					}
 				}
 			}
 
 			// async DB write — after fan-out so latency is not affected
 			h.writer.Enqueue(db.WriteJob{
-				ChannelID: message.RoomID,
+				ChannelID: message.ChannelID,
 				SenderID:  message.SenderID,
 				Content:   message.Content,
-				ParentID:  message.ParentID, // add ParentID to Message struct too
+				ThreadID:  message.ThreadID, // add ThreadID to Message struct too
 			})
 
 		case sig := <-h.signal:
@@ -187,9 +187,9 @@ func (h *Hub) Publish(ctx context.Context, payload any) error {
 	return h.redis.Publish(ctx, channel, data).Err()
 }
 
-func (h *Hub) GetHistory(roomID string) []Message {
+func (h *Hub) GetHistory(channelID string) []Message {
 	h.historyMu.RLock()
-	buf, ok := h.history[roomID]
+	buf, ok := h.history[channelID]
 	h.historyMu.RUnlock()
 	if !ok {
 		return nil
@@ -207,10 +207,10 @@ func (h *Hub) EnqueueSignal(signal SignalMsg) {
 }
 
 // NotifyRoom sends an event to everyone in a channel room
-func (h *Hub) NotifyRoom(roomID string, payload []byte) {
-	room, ok := h.rooms[roomID]
+func (h *Hub) NotifyRoom(channelID string, payload []byte) {
+	room, ok := h.rooms[channelID]
 	if !ok {
-		log.Fatalf("there is no room=%s", roomID)
+		log.Fatalf("there is no room=%s", channelID)
 		return
 	}
 	for client := range room {

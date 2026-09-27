@@ -45,7 +45,7 @@ type Client struct {
 	hub        *Hub
 	senderName string
 	senderID   string
-	roomID     string
+	channelID  string
 	// The websocket connection.
 	conn *websocket.Conn
 
@@ -76,7 +76,7 @@ func (c *Client) readPump() {
 		}
 		// Step 1: peek at the type field only
 		var peek struct {
-			Type string `json:"type"`
+			Type string `json:"msg_type"`
 		}
 		if err := json.Unmarshal(data, &peek); err != nil {
 			log.Println("invalid frame:", err)
@@ -89,7 +89,7 @@ func (c *Client) readPump() {
 			data = bytes.TrimSpace(bytes.Replace(data, newline, space, -1))
 			var payload struct {
 				Content  string `json:"content"`
-				ParentID string `json:"parent_id,omitempty"`
+				ThreadID string `json:"thread_id,omitempty"`
 			}
 			if err := json.Unmarshal(data, &payload); err != nil {
 				log.Printf("invalid message format: %v", err)
@@ -97,22 +97,24 @@ func (c *Client) readPump() {
 			}
 
 			c.hub.broadcast <- Message{
-				Type:     "message.new",
-				SenderID: c.senderID,
-				Content:  payload.Content,
-				RoomID:   c.roomID,
-				ParentID: payload.ParentID,
+				Type:       "message.new",
+				SenderID:   c.senderID,
+				SenderName: c.senderName,
+				Content:    payload.Content,
+				ChannelID:  c.channelID,
+				ThreadID:   payload.ThreadID,
 			}
 
 		//Typing
 		case TypeTypingStart:
 			payload, _ := json.Marshal(map[string]string{
-				"type":    TypeTypingIndicator,
-				"user_id": c.senderID,
-				"room_id": c.roomID,
+				"msg_type":        TypeTypingIndicator,
+				"sender_id":       c.senderID,
+				"channel_id":      c.channelID,
+				"sender_username": c.senderName,
 			})
 			//need to notify to all users who are in the room
-			c.hub.NotifyRoom(c.roomID, payload)
+			c.hub.NotifyRoom(c.channelID, payload)
 
 		// start call
 		case TypeCallStart:
@@ -214,9 +216,9 @@ func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Reques
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	roomID := r.URL.Query().Get("room_id")
-	if roomID == "" {
-		log.Println("missing room_id")
+	channelID := r.URL.Query().Get("channel_id")
+	if channelID == "" {
+		log.Println("missing channelID")
 		return
 	}
 
@@ -225,7 +227,7 @@ func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Reques
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, senderID: userId, senderName: userName, roomID: roomID, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, senderID: userId, senderName: userName, channelID: channelID, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
@@ -237,7 +239,7 @@ func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Reques
 
 // handleCallStart creates a new call room and notifies channel members
 func (c *Client) handleCallStart(msg InboundCallMsg) {
-	call, existing, isCreated := c.hub.callManager.StartCall(c.senderID, c.senderName, c.roomID)
+	call, existing, isCreated := c.hub.callManager.StartCall(c.senderID, c.senderName, c.channelID)
 
 	if isCreated {
 		// tell initiator: here is your call ID
@@ -260,7 +262,7 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 			UserID:    call.InitiatorID,
 		}
 		inPayload, _ := json.Marshal(incoming)
-		c.hub.NotifyRoom(call.RoomID, inPayload)
+		c.hub.NotifyRoom(c.channelID, inPayload)
 	} else {
 		c.sendExistingPeers(msg.CallID, existing)
 	}

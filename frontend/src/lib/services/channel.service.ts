@@ -23,12 +23,14 @@ export const createChannel = createServerFn({ method: 'POST' })
   .validator((data) => CreateChannelSchema.parse(data))
   .handler(async ({ data }) => {
     try {
+      const headers = await getAuthHeader()
       const { workspace_id, ...createData } = data
       const res = await axiosInstance<CreateChannelResponse>(
         `workspaces/${workspace_id}/channels`,
         {
           data: createData,
           method: 'POST',
+          headers,
         },
       )
       return res.data
@@ -69,10 +71,8 @@ export const getChannelByID = createServerFn({ method: 'GET' })
           headers,
         },
       )
-      console.log('blah blah', res.data)
       return res.data
     } catch (error: unknown) {
-      console.log('blah blah', error)
       throw new Error(getApiErrorMessage(error, 'Failed to get channel'))
     }
   })
@@ -82,10 +82,12 @@ export const joinChannel = createServerFn({ method: 'POST' })
   .validator((data) => JoinChannelSchema.parse(data))
   .handler(async ({ data }) => {
     try {
+      const headers = await getAuthHeader()
       const res = await axiosInstance<JoinChannelResponse>(
         `/workspaces/${data.workspace_id}/channels/${data.channel_id}/join`,
         {
           method: 'POST',
+          headers,
         },
       )
       return res.data
@@ -99,10 +101,12 @@ export const leaveChannel = createServerFn({ method: 'POST' })
   .validator((data) => LeaveChannelSchema.parse(data))
   .handler(async ({ data }) => {
     try {
+      const headers = await getAuthHeader()
       const res = await axiosInstance<LeaveChannelResponse>(
         `/workspaces/${data.workspace_id}/channels/${data.channel_id}/leave`,
         {
           method: 'POST',
+          headers,
         },
       )
       return res.data
@@ -113,17 +117,21 @@ export const leaveChannel = createServerFn({ method: 'POST' })
 
 // get channel messages
 export const getChannelMessage = createServerFn({ method: 'GET' })
-  .inputValidator((data) => GetChannelMessageSchema.parse(data))
+  .validator((data) => GetChannelMessageSchema.parse(data))
   .handler(async ({ data }) => {
     try {
+      const headers = await getAuthHeader()
       const res = await axiosInstance<GetChannelMessageResponse>(
-        `/channels/${data.id}/messages`,
+        `/workspaces/${data.workspace_id}/channels/${data.channel_id}/messages`,
         {
           method: 'GET',
+          headers,
         },
       )
+      console.log("channel Message",res.data)
       return res.data
     } catch (error: unknown) {
+      console.log('blah blah', error)
       throw new Error(getApiErrorMessage(error, 'Failed to get channel'))
     }
   })

@@ -15,7 +15,7 @@ type Participant struct {
 
 type Call struct {
 	ID            string
-	RoomID        string
+	channelID     string
 	InitiatorID   string
 	InitiatorName string
 	participants  map[string]*Participant

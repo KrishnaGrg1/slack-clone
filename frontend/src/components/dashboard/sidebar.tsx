@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 
 import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -21,20 +20,25 @@ import {
 } from '@/components/ui/tooltip'
 
 import { cn } from '@/lib/utils'
-import type { Channel, Channel_Members } from '@/lib/types/channel.type'
+import type { Channel } from '@/lib/types/channel.type'
 import type { User } from '#/lib/types/auth.type'
+import { Link } from '@tanstack/react-router'
+import type { Workspace, WorkspaceMember } from '#/lib/types/workspace.type'
 
 export default function Sidebar({
   channels,
-  members,
+  workspaceDetails,
   user,
-  onChannelSelect,
 }: {
   channels: Channel[]
-  members: Channel_Members[]
+  workspaceDetails: {
+    workspace: Workspace
+    members: WorkspaceMember[]
+  }
   user: User
-  onChannelSelect: (id: string) => void
 }) {
+  const workspace = workspaceDetails.workspace
+  const members = workspaceDetails.members
   return (
     <TooltipProvider delay={200}>
       <aside className="w-60 shrink-0 flex flex-col min-h-0  bg-[#111118] border-r border-[#2A2A3A]">
@@ -94,33 +98,28 @@ export default function Sidebar({
 
             <div className="space-y-0.5">
               {channels.map((ch) => (
-                <Button
+                <Link
                   key={ch.id}
-                  variant="ghost"
-                  onClick={() => onChannelSelect(ch.id)}
+                  to="/workspace/$slug/channel/$id"
+                  params={{
+                    slug: workspace.slug,
+                    id: ch.id,
+                  }}
                   className={cn(
-                    'w-full justify-start gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
-                    'hover:text-[#F5F0E8] hover:bg-[#16161F]',
-                    // activeChannel === ch.id
-                    //   ? 'bg-[#E8A838]/10 text-[#F5F0E8] hover:bg-[#E8A838]/10'
-                    //   :
-
-                    'text-[#7A7890]',
+                    'w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
+                    'text-[#7A7890] hover:text-[#F5F0E8] hover:bg-[#16161F]',
                   )}
+                  activeProps={{
+                    className: cn(
+                      'w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
+                      'bg-[#E8A838]/10 text-[#F5F0E8]',
+                    ),
+                  }}
                 >
                   <Hash className="h-3.5 w-3.5 shrink-0" />
 
                   <span className="text-xs flex-1 truncate">{ch.name}</span>
-
-                  {/* {ch.unread > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="h-4 min-w-4 px-1 bg-[#E8A838] text-[#0A0A0F] text-[9px] font-bold rounded-full hover:bg-[#E8A838]"
-                    >
-                      {ch.unread}
-                    </Badge>
-                  )} */}
-                </Button>
+                </Link>
               ))}
             </div>
           </div>
@@ -172,7 +171,7 @@ export default function Sidebar({
         {/* User footer */}
         <div className="h-12 flex items-center gap-2 px-3 border-t border-[#2A2A3A] shrink-0">
           <Avatar className="h-7 w-7 rounded-md shrink-0">
-            <AvatarFallback className="rounded-md bg-[#E8A838] text-[#0A0A0F] text-xs font-bold">
+            <AvatarFallback className="rounded-full bg-[#E8A838] text-[#0A0A0F] text-xs font-bold">
               {user.avatar_url ?? user.username}
             </AvatarFallback>
             <AvatarBadge className="h-2 w-2 bg-[#1D9E75] border border-[#111118]" />

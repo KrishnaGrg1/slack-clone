@@ -47,7 +47,7 @@ func TestNewHub(t *testing.T) {
 
 func TestHubRunBroadcastsJSONToRegisteredClient(t *testing.T) {
 	h := startHub(t)
-	client := &Client{roomID: "room-1", send: make(chan []byte, 1)}
+	client := &Client{channelID: "room-1", send: make(chan []byte, 1)}
 
 	h.register <- client
 	waitForRoomClientRegistered(t, h, client)
@@ -67,7 +67,7 @@ func TestHubRunBroadcastsJSONToRegisteredClient(t *testing.T) {
 
 func TestHubRunUnregisterClosesClientChannel(t *testing.T) {
 	h := startHub(t)
-	client := &Client{roomID: "room-1", send: make(chan []byte, 1)}
+	client := &Client{channelID: "room-1", send: make(chan []byte, 1)}
 
 	h.register <- client
 	waitForRoomClientRegistered(t, h, client)
@@ -82,14 +82,14 @@ func TestHubRunUnregisterClosesClientChannel(t *testing.T) {
 		t.Fatal("timed out waiting for client channel to close")
 	}
 
-	if _, ok := h.rooms[client.roomID][client]; ok {
+	if _, ok := h.rooms[client.channelID][client]; ok {
 		t.Fatal("expected client to be removed from room")
 	}
 }
 
 func TestHubRunDropsSlowClient(t *testing.T) {
 	h := startHub(t)
-	client := &Client{roomID: "room-1", send: make(chan []byte, 1)}
+	client := &Client{channelID: "room-1", send: make(chan []byte, 1)}
 
 	h.register <- client
 	waitForRoomClientRegistered(t, h, client)
@@ -99,7 +99,7 @@ func TestHubRunDropsSlowClient(t *testing.T) {
 	if !waitForRoomClientRemoval(t, h, client) {
 		t.Fatal("timed out waiting for slow client to be removed")
 	}
-	if room, ok := h.rooms[client.roomID]; ok {
+	if room, ok := h.rooms[client.channelID]; ok {
 		if _, exists := room[client]; exists {
 			t.Fatal("expected slow client to be removed from room")
 		}
@@ -111,7 +111,7 @@ func waitForRoomClientRegistered(t *testing.T, h *Hub, client *Client) {
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if room, ok := h.rooms[client.roomID]; ok {
+		if room, ok := h.rooms[client.channelID]; ok {
 			if _, exists := room[client]; exists {
 				return
 			}
@@ -127,7 +127,7 @@ func waitForRoomClientRemoval(t *testing.T, h *Hub, client *Client) bool {
 
 	deadline := time.Now().Add(time.Second)
 	for time.Now().Before(deadline) {
-		if room, ok := h.rooms[client.roomID]; !ok {
+		if room, ok := h.rooms[client.channelID]; !ok {
 			return true
 		} else if _, exists := room[client]; !exists {
 			return true

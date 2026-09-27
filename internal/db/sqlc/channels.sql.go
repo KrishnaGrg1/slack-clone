@@ -14,7 +14,7 @@ import (
 const createChannel = `-- name: CreateChannel :one
 INSERT INTO channels(name,channel_type,created_by,workspace_id)
 VALUES ($1,$2,$3,$4)
-RETURNING id, workspace_id, name, channel_type, created_by, created_at
+RETURNING id, workspace_id, name, topic, channel_type, created_by, created_at
 `
 
 type CreateChannelParams struct {
@@ -36,6 +36,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 		&i.ID,
 		&i.WorkspaceID,
 		&i.Name,
+		&i.Topic,
 		&i.ChannelType,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -44,7 +45,7 @@ func (q *Queries) CreateChannel(ctx context.Context, arg CreateChannelParams) (C
 }
 
 const getChannelById = `-- name: GetChannelById :one
-SELECT id, workspace_id, name, channel_type, created_by, created_at FROM channels
+SELECT id, workspace_id, name, topic, channel_type, created_by, created_at FROM channels
 WHERE id = $1 
 LIMIT 1
 `
@@ -56,6 +57,7 @@ func (q *Queries) GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, 
 		&i.ID,
 		&i.WorkspaceID,
 		&i.Name,
+		&i.Topic,
 		&i.ChannelType,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -64,7 +66,7 @@ func (q *Queries) GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, 
 }
 
 const getChannelMembers = `-- name: GetChannelMembers :many
-SELECT u.id, u.username, u.email, u.avatar_url
+SELECT u.id, u.username, u.email, u.avatar_url,cm.role
 FROM channel_members cm
 JOIN users u ON u.id = cm.user_id
 WHERE cm.channel_id = $1
@@ -75,6 +77,7 @@ type GetChannelMembersRow struct {
 	Username  string      `json:"username"`
 	Email     string      `json:"email"`
 	AvatarUrl pgtype.Text `json:"avatar_url"`
+	Role      string      `json:"role"`
 }
 
 func (q *Queries) GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error) {
@@ -91,6 +94,7 @@ func (q *Queries) GetChannelMembers(ctx context.Context, channelID pgtype.UUID) 
 			&i.Username,
 			&i.Email,
 			&i.AvatarUrl,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
@@ -103,8 +107,8 @@ func (q *Queries) GetChannelMembers(ctx context.Context, channelID pgtype.UUID) 
 }
 
 const getChannels = `-- name: GetChannels :many
-SELECT id, workspace_id, name, channel_type, created_by, created_at FROM channels
-WHERE is_private = false
+SELECT id, workspace_id, name, topic, channel_type, created_by, created_at FROM channels
+WHERE channel_type = public
 `
 
 func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
@@ -120,6 +124,7 @@ func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
 			&i.ID,
 			&i.WorkspaceID,
 			&i.Name,
+			&i.Topic,
 			&i.ChannelType,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -135,7 +140,7 @@ func (q *Queries) GetChannels(ctx context.Context) ([]Channel, error) {
 }
 
 const getChannelsByWorkspace = `-- name: GetChannelsByWorkspace :many
-SELECT c.id, c.workspace_id, c.name, c.channel_type, c.created_by, c.created_at FROM channels c
+SELECT c.id, c.workspace_id, c.name, c.topic, c.channel_type, c.created_by, c.created_at FROM channels c
 WHERE c.workspace_id = $1
 AND (
     c.channel_type = 'public'
@@ -165,6 +170,7 @@ func (q *Queries) GetChannelsByWorkspace(ctx context.Context, arg GetChannelsByW
 			&i.ID,
 			&i.WorkspaceID,
 			&i.Name,
+			&i.Topic,
 			&i.ChannelType,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -201,18 +207,19 @@ func (q *Queries) IsChannelMember(ctx context.Context, arg IsChannelMemberParams
 }
 
 const joinChannel = `-- name: JoinChannel :exec
-INSERT INTO channel_members(channel_id,user_id)
-VALUES ($1,$2)
+INSERT INTO channel_members(channel_id,user_id,role)
+VALUES ($1,$2, $3)
 ON CONFLICT (channel_id, user_id) DO NOTHING
 `
 
 type JoinChannelParams struct {
 	ChannelID pgtype.UUID `json:"channel_id"`
 	UserID    pgtype.UUID `json:"user_id"`
+	Role      string      `json:"role"`
 }
 
 func (q *Queries) JoinChannel(ctx context.Context, arg JoinChannelParams) error {
-	_, err := q.db.Exec(ctx, joinChannel, arg.ChannelID, arg.UserID)
+	_, err := q.db.Exec(ctx, joinChannel, arg.ChannelID, arg.UserID, arg.Role)
 	return err
 }
 

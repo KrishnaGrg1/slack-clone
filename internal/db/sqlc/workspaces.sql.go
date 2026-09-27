@@ -29,15 +29,15 @@ func (q *Queries) AddWorkspaceMember(ctx context.Context, arg AddWorkspaceMember
 }
 
 const createWorkspace = `-- name: CreateWorkspace :one
-INSERT INTO workspaces (name, slug, is_private, created_by)
+INSERT INTO workspaces (name, slug, is_private , created_by)
 VALUES ($1, $2, $3, $4)
-RETURNING id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
+RETURNING id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at
 `
 
 type CreateWorkspaceParams struct {
 	Name      string      `json:"name"`
 	Slug      string      `json:"slug"`
-	IsPrivate pgtype.Bool `json:"is_private"`
+	IsPrivate bool        `json:"is_private"`
 	CreatedBy pgtype.UUID `json:"created_by"`
 }
 
@@ -53,11 +53,11 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 		&i.ID,
 		&i.Name,
 		&i.Slug,
-		&i.CreatedBy,
-		&i.CreatedAt,
 		&i.IsPrivate,
 		&i.InviteCode,
 		&i.InviteExpiresAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -81,13 +81,13 @@ const editWorkspace = `-- name: EditWorkspace :one
 UPDATE workspaces
 set name = $1, slug = $2, is_private = $3
 where id = $4 and created_by = $5
-returning id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
+returning id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at
 `
 
 type EditWorkspaceParams struct {
 	Name      string      `json:"name"`
 	Slug      string      `json:"slug"`
-	IsPrivate pgtype.Bool `json:"is_private"`
+	IsPrivate bool        `json:"is_private"`
 	ID        pgtype.UUID `json:"id"`
 	CreatedBy pgtype.UUID `json:"created_by"`
 }
@@ -105,11 +105,11 @@ func (q *Queries) EditWorkspace(ctx context.Context, arg EditWorkspaceParams) (W
 		&i.ID,
 		&i.Name,
 		&i.Slug,
-		&i.CreatedBy,
-		&i.CreatedAt,
 		&i.IsPrivate,
 		&i.InviteCode,
 		&i.InviteExpiresAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -150,7 +150,7 @@ func (q *Queries) GenerateWorkspaceInvite(ctx context.Context, arg GenerateWorks
 }
 
 const getWorkspaceByID = `-- name: GetWorkspaceByID :one
-SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at FROM workspaces WHERE id = $1 LIMIT 1
+SELECT id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at FROM workspaces WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error) {
@@ -160,17 +160,17 @@ func (q *Queries) GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspa
 		&i.ID,
 		&i.Name,
 		&i.Slug,
-		&i.CreatedBy,
-		&i.CreatedAt,
 		&i.IsPrivate,
 		&i.InviteCode,
 		&i.InviteExpiresAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getWorkspaceByInviteCode = `-- name: GetWorkspaceByInviteCode :one
-SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at From
+SELECT id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at From
     workspaces
 WHERE 
     invite_code = $1
@@ -188,17 +188,17 @@ func (q *Queries) GetWorkspaceByInviteCode(ctx context.Context, inviteCode pgtyp
 		&i.ID,
 		&i.Name,
 		&i.Slug,
-		&i.CreatedBy,
-		&i.CreatedAt,
 		&i.IsPrivate,
 		&i.InviteCode,
 		&i.InviteExpiresAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getWorkspaceBySlug = `-- name: GetWorkspaceBySlug :one
-SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at FROM workspaces WHERE slug = $1 LIMIT 1
+SELECT id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at FROM workspaces WHERE slug = $1 LIMIT 1
 `
 
 func (q *Queries) GetWorkspaceBySlug(ctx context.Context, slug string) (Workspace, error) {
@@ -208,17 +208,17 @@ func (q *Queries) GetWorkspaceBySlug(ctx context.Context, slug string) (Workspac
 		&i.ID,
 		&i.Name,
 		&i.Slug,
-		&i.CreatedBy,
-		&i.CreatedAt,
 		&i.IsPrivate,
 		&i.InviteCode,
 		&i.InviteExpiresAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getWorkspaceMembers = `-- name: GetWorkspaceMembers :many
-SELECT u.id,u.username,u.email,u.avatar_url
+SELECT u.id,u.username,u.email,u.avatar_url,ws.role
 FROM workspace_members ws
 JOIN users u ON u.id = ws.user_id
 where ws.workspace_id = $1
@@ -229,6 +229,7 @@ type GetWorkspaceMembersRow struct {
 	Username  string      `json:"username"`
 	Email     string      `json:"email"`
 	AvatarUrl pgtype.Text `json:"avatar_url"`
+	Role      string      `json:"role"`
 }
 
 func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]GetWorkspaceMembersRow, error) {
@@ -245,6 +246,7 @@ func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UU
 			&i.Username,
 			&i.Email,
 			&i.AvatarUrl,
+			&i.Role,
 		); err != nil {
 			return nil, err
 		}
@@ -257,7 +259,7 @@ func (q *Queries) GetWorkspaceMembers(ctx context.Context, workspaceID pgtype.UU
 }
 
 const getWorkspacesByUser = `-- name: GetWorkspacesByUser :many
-SELECT w.id, w.name, w.slug, w.created_by, w.created_at, w.is_private, w.invite_code, w.invite_expires_at FROM workspaces w
+SELECT w.id, w.name, w.slug, w.is_private, w.invite_code, w.invite_expires_at, w.created_by, w.created_at FROM workspaces w
 INNER JOIN workspace_members wm ON wm.workspace_id = w.id
 WHERE wm.user_id = $1
 ORDER BY w.created_at ASC
@@ -276,11 +278,11 @@ func (q *Queries) GetWorkspacesByUser(ctx context.Context, userID pgtype.UUID) (
 			&i.ID,
 			&i.Name,
 			&i.Slug,
-			&i.CreatedBy,
-			&i.CreatedAt,
 			&i.IsPrivate,
 			&i.InviteCode,
 			&i.InviteExpiresAt,
+			&i.CreatedBy,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -312,7 +314,7 @@ func (q *Queries) IsWorkspaceMember(ctx context.Context, arg IsWorkspaceMemberPa
 }
 
 const searchWorkspaces = `-- name: SearchWorkspaces :many
-SELECT id, name, slug, created_by, created_at, is_private, invite_code, invite_expires_at
+SELECT id, name, slug, is_private, invite_code, invite_expires_at, created_by, created_at
 FROM workspaces
 WHERE
     (
@@ -366,11 +368,11 @@ func (q *Queries) SearchWorkspaces(ctx context.Context, arg SearchWorkspacesPara
 			&i.ID,
 			&i.Name,
 			&i.Slug,
-			&i.CreatedBy,
-			&i.CreatedAt,
 			&i.IsPrivate,
 			&i.InviteCode,
 			&i.InviteExpiresAt,
+			&i.CreatedBy,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

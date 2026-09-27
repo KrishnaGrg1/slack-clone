@@ -11,8 +11,10 @@ import (
 type Call struct {
 	ID          pgtype.UUID        `json:"id"`
 	ChannelID   pgtype.UUID        `json:"channel_id"`
+	DmID        pgtype.UUID        `json:"dm_id"`
 	ThreadMsgID pgtype.UUID        `json:"thread_msg_id"`
 	StartedBy   pgtype.UUID        `json:"started_by"`
+	Status      string             `json:"status"`
 	StartedAt   pgtype.Timestamptz `json:"started_at"`
 	EndedAt     pgtype.Timestamptz `json:"ended_at"`
 	DurationSec pgtype.Int4        `json:"duration_sec"`
@@ -38,28 +40,52 @@ type Channel struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
 	Name        string             `json:"name"`
+	Topic       pgtype.Text        `json:"topic"`
 	ChannelType string             `json:"channel_type"`
 	CreatedBy   pgtype.UUID        `json:"created_by"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type ChannelMember struct {
-	ChannelID pgtype.UUID        `json:"channel_id"`
-	UserID    pgtype.UUID        `json:"user_id"`
-	Role      string             `json:"role"`
-	JoinedAt  pgtype.Timestamptz `json:"joined_at"`
-	LastRead  pgtype.UUID        `json:"last_read"`
+	ChannelID  pgtype.UUID        `json:"channel_id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Role       string             `json:"role"`
+	JoinedAt   pgtype.Timestamptz `json:"joined_at"`
+	LastReadAt pgtype.Timestamptz `json:"last_read_at"`
+}
+
+type DirectMessage struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type DirectMessageMember struct {
+	DmID       pgtype.UUID        `json:"dm_id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	JoinedAt   pgtype.Timestamptz `json:"joined_at"`
+	LastReadAt pgtype.Timestamptz `json:"last_read_at"`
 }
 
 type Message struct {
 	ID        pgtype.UUID        `json:"id"`
 	ChannelID pgtype.UUID        `json:"channel_id"`
+	DmID      pgtype.UUID        `json:"dm_id"`
 	SenderID  pgtype.UUID        `json:"sender_id"`
 	Content   string             `json:"content"`
-	ParentID  pgtype.UUID        `json:"parent_id"`
-	MsgType   pgtype.Text        `json:"msg_type"`
+	ThreadID  pgtype.UUID        `json:"thread_id"`
+	MsgType   string             `json:"msg_type"`
+	CallID    pgtype.UUID        `json:"call_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	EditedAt  pgtype.Timestamptz `json:"edited_at"`
+}
+
+type Reaction struct {
+	ID        pgtype.UUID        `json:"id"`
+	MessageID pgtype.UUID        `json:"message_id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	Emoji     string             `json:"emoji"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {
@@ -75,11 +101,11 @@ type Workspace struct {
 	ID              pgtype.UUID        `json:"id"`
 	Name            string             `json:"name"`
 	Slug            string             `json:"slug"`
-	CreatedBy       pgtype.UUID        `json:"created_by"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	IsPrivate       pgtype.Bool        `json:"is_private"`
+	IsPrivate       bool               `json:"is_private"`
 	InviteCode      pgtype.Text        `json:"invite_code"`
 	InviteExpiresAt pgtype.Timestamptz `json:"invite_expires_at"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
 type WorkspaceMember struct {

@@ -7,8 +7,6 @@ import (
 
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
 	"github.com/KrishnaGrg1/slack-clone/internal/pgutil"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type DBWriter struct {
@@ -20,7 +18,7 @@ type WriteJob struct {
 	ChannelID string
 	SenderID  string
 	Content   string
-	ParentID  string // empty string = top-level message
+	ThreadID  string // empty string = top-level message
 }
 
 func NewDBWriter(queries *db.Queries) *DBWriter {
@@ -83,14 +81,14 @@ func (w *DBWriter) flush(ctx context.Context, batch []WriteJob) {
 			ChannelID: channelUUID,
 			SenderID:  senderUUID,
 			Content:   job.Content,
-			MsgType:   pgtype.Text{String: "text", Valid: true},
+			MsgType:   "text",
 		}
 
 		// set parent if thread reply
-		if job.ParentID != "" {
-			parentUUID, err := pgutil.ParseToPGUUID(job.ParentID)
+		if job.ThreadID != "" {
+			parentUUID, err := pgutil.ParseToPGUUID(job.ThreadID)
 			if err == nil {
-				params.ParentID = parentUUID
+				params.ThreadID = parentUUID
 			}
 		}
 

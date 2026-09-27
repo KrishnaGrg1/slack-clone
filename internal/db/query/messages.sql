@@ -1,5 +1,5 @@
 -- name: CreateMessage :one
-INSERT INTO messages(channel_id,sender_id,content,parent_id,msg_type)
+INSERT INTO messages(channel_id,sender_id,content,thread_id,msg_type)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
@@ -9,7 +9,7 @@ SELECT
     m.channel_id,
     m.sender_id,
     m.content,
-    m.parent_id,
+    m.thread_id,
     m.msg_type,
     m.created_at,
     m.edited_at,
@@ -18,7 +18,7 @@ SELECT
 FROM messages m
 JOIN users u ON u.id = m.sender_id
 WHERE m.channel_id = $1
-AND m.parent_id IS NULL
+AND m.thread_id IS NULL
 AND ($2::timestamptz IS NULL OR m.created_at < $2)
 ORDER BY m.created_at DESC
 LIMIT $3;
@@ -29,7 +29,7 @@ SELECT
     m.channel_id,
     m.sender_id,
     m.content,
-    m.parent_id,
+    m.thread_id,
     m.msg_type,
     m.created_at,
     m.edited_at,
@@ -37,7 +37,7 @@ SELECT
     u.avatar_url AS sender_avatar 
 FROM messages m
 JOIN users u ON u.id = m.sender_id
-WHERE m.parent_id = $1
+WHERE m.thread_id = $1
 ORDER BY m.created_at ASC;
 
 -- name: GetMessageByID :one

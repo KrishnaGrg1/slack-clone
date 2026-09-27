@@ -73,7 +73,7 @@ func (h *WorkspaceHandler) CreateWorkspace(w http.ResponseWriter, r *http.Reques
 	newWorkspace, err := h.store.Queries.CreateWorkspace(r.Context(), db.CreateWorkspaceParams{
 		Name:      req.Name,
 		Slug:      req.Slug,
-		IsPrivate: pgtype.Bool{Bool: req.IsPrivate, Valid: true},
+		IsPrivate: req.IsPrivate,
 		CreatedBy: userUUID,
 	})
 	if err != nil {
@@ -129,7 +129,7 @@ func (h *WorkspaceHandler) JoinWorkspace(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if workspace.IsPrivate.Valid && workspace.IsPrivate.Bool {
+	if workspace.IsPrivate && workspace.IsPrivate {
 		response.Error(w, http.StatusForbidden, "forbidden",
 			"WS_004", "workspace is private")
 		return
@@ -303,12 +303,9 @@ func (h *WorkspaceHandler) EditWorkspace(w http.ResponseWriter, r *http.Request)
 	newWorkspace, err := h.store.Queries.EditWorkspace(
 		r.Context(),
 		db.EditWorkspaceParams{
-			Name: req.Name,
-			Slug: req.Slug,
-			IsPrivate: pgtype.Bool{
-				Bool:  req.IsPrivate,
-				Valid: true,
-			},
+			Name:      req.Name,
+			Slug:      req.Slug,
+			IsPrivate: req.IsPrivate,
 			ID:        workspaceUUID,
 			CreatedBy: userUUID,
 		},

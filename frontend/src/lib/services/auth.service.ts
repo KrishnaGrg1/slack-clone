@@ -46,7 +46,6 @@ export const login = createServerFn({ method: 'POST' })
         data: data,
         method: 'POST',
       })
-      console.log('arigato', res.data)
       await persistAuthSession(res.data)
       return res.data
     } catch (error: unknown) {

@@ -40,21 +40,6 @@ import { useGetChannel, useGetChannels } from '#/hooks/use-channel'
 import { parentRoute } from '../route'
 
 export const Route = createFileRoute('/workspace/$slug/')({
-  loader: async ({ params }) => {
-    // Throws automatically if backend returns 404, 403, or error string
-    const workspace = await getWorkspaceBySlug({
-      data: { slug: params.slug },
-    })
-
-    return { workspace }
-  },
-
-  // Renders when loader throws an Error or custom API error
-  errorComponent: ({ reset }) => <WorkspaceNotFound reset={reset} />,
-
-  // Renders when router explicitly triggers a 404
-  notFoundComponent: () => <WorkspaceNotFound />,
-
   component: Dashboard,
 })
 
@@ -458,13 +443,6 @@ export default function Dashboard() {
   const [inCall, setInCall] = useState(false)
   return (
     <div className="h-screen flex bg-[#0A0A0F] overflow-hidden font-mono">
-      <Sidebar
-        user={user}
-        members={members ?? []}
-        channels={channels?.data ?? []}
-        onChannelSelect={setActiveChannel}
-      />
-
       {/* main */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {inCall && <CallOverlay onEnd={() => setInCall(false)} />}

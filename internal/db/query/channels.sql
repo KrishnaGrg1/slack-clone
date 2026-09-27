@@ -11,11 +11,11 @@ LIMIT 1;
 
 -- name: GetChannels :many
 SELECT * FROM channels
-WHERE is_private = false;
+WHERE channel_type = public;
 
 -- name: JoinChannel :exec
-INSERT INTO channel_members(channel_id,user_id)
-VALUES ($1,$2)
+INSERT INTO channel_members(channel_id,user_id,role)
+VALUES ($1,$2, $3)
 ON CONFLICT (channel_id, user_id) DO NOTHING;
 
 -- name: LeaveChannel :exec
@@ -23,7 +23,7 @@ DELETE FROM channel_members
 WHERE channel_id = $1 AND user_id = $2;
 
 -- name: GetChannelMembers :many
-SELECT u.id, u.username, u.email, u.avatar_url
+SELECT u.id, u.username, u.email, u.avatar_url,cm.role
 FROM channel_members cm
 JOIN users u ON u.id = cm.user_id
 WHERE cm.channel_id = $1;

@@ -1,5 +1,5 @@
 -- name: CreateWorkspace :one
-INSERT INTO workspaces (name, slug, is_private, created_by)
+INSERT INTO workspaces (name, slug, is_private , created_by)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
@@ -24,7 +24,7 @@ ORDER BY w.created_at ASC;
 SELECT * FROM workspaces WHERE id = $1 LIMIT 1;
 
 -- name: GetWorkspaceMembers :many
-SELECT u.id,u.username,u.email,u.avatar_url
+SELECT u.id,u.username,u.email,u.avatar_url,ws.role
 FROM workspace_members ws
 JOIN users u ON u.id = ws.user_id
 where ws.workspace_id = $1; 

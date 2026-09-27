@@ -20,10 +20,10 @@ func NewCallManager() *CallManager {
 	}
 }
 
-func (cm *CallManager) ActiveCallForRoom(roomID string) (*Call, bool) {
+func (cm *CallManager) ActiveCallForRoom(channelID string) (*Call, bool) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
-	callID, ok := cm.byRoom[roomID]
+	callID, ok := cm.byRoom[channelID]
 	if !ok {
 		return nil, false
 	}
@@ -31,21 +31,21 @@ func (cm *CallManager) ActiveCallForRoom(roomID string) (*Call, bool) {
 	return call, ok
 }
 
-func (cm *CallManager) StartCall(userID, name, roomID string) (call *Call, existing []Participant, created bool) {
+func (cm *CallManager) StartCall(userID, name, channelID string) (call *Call, existing []Participant, created bool) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
 	// room already has a call — just join it
-	if callID, ok := cm.byRoom[roomID]; ok {
+	if callID, ok := cm.byRoom[channelID]; ok {
 		if call, ok := cm.calls[callID]; ok {
 			return call, call.addAndSnapshot(userID, name), false
 		}
-		delete(cm.byRoom, roomID)
+		delete(cm.byRoom, channelID)
 	}
 
 	call = &Call{
 		ID:            uuid.New().String(),
-		RoomID:        roomID,
+		channelID:     channelID,
 		InitiatorID:   userID,
 		InitiatorName: name,
 		participants: map[string]*Participant{
@@ -53,7 +53,7 @@ func (cm *CallManager) StartCall(userID, name, roomID string) (call *Call, exist
 		},
 	}
 	cm.calls[call.ID] = call
-	cm.byRoom[roomID] = call.ID
+	cm.byRoom[channelID] = call.ID
 	return call, nil, true
 }
 
@@ -69,7 +69,7 @@ func (cm *CallManager) JoinCall(callID, userID, name string) (call *Call, existi
 
 type Departure struct {
 	CallID    string
-	RoomID    string
+	channelID string
 	Remaining []string
 	Ended     bool
 }
@@ -92,14 +92,14 @@ func (cm *CallManager) removeLocked(call *Call, userID string) (Departure, bool)
 	ended := len(remaining) == 0
 	if ended {
 		delete(cm.calls, call.ID)
-		if id, ok := cm.byRoom[call.RoomID]; ok && id == call.ID {
-			delete(cm.byRoom, call.RoomID)
+		if id, ok := cm.byRoom[call.channelID]; ok && id == call.ID {
+			delete(cm.byRoom, call.channelID)
 		}
 	}
 
 	return Departure{
 		CallID:    call.ID,
-		RoomID:    call.RoomID,
+		channelID: call.channelID,
 		Remaining: remaining,
 		Ended:     ended,
 	}, true
@@ -115,10 +115,10 @@ func (cm *CallManager) LeaveCall(userID, callID string) (Departure, bool) {
 	return cm.removeLocked(call, userID)
 }
 
-func (cm *CallManager) LeaveAllCalls(userID, roomID string) (Departure, bool) {
+func (cm *CallManager) LeaveAllCalls(userID, channelID string) (Departure, bool) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
-	callID, ok := cm.byRoom[roomID]
+	callID, ok := cm.byRoom[channelID]
 	if !ok {
 		return Departure{}, false
 	}

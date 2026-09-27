@@ -12,17 +12,17 @@ import (
 )
 
 const createMessage = `-- name: CreateMessage :one
-INSERT INTO messages(channel_id,sender_id,content,parent_id,msg_type)
+INSERT INTO messages(channel_id,sender_id,content,thread_id,msg_type)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, channel_id, sender_id, content, parent_id, msg_type, created_at, edited_at
+RETURNING id, channel_id, dm_id, sender_id, content, thread_id, msg_type, call_id, created_at, edited_at
 `
 
 type CreateMessageParams struct {
 	ChannelID pgtype.UUID `json:"channel_id"`
 	SenderID  pgtype.UUID `json:"sender_id"`
 	Content   string      `json:"content"`
-	ParentID  pgtype.UUID `json:"parent_id"`
-	MsgType   pgtype.Text `json:"msg_type"`
+	ThreadID  pgtype.UUID `json:"thread_id"`
+	MsgType   string      `json:"msg_type"`
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
@@ -30,17 +30,19 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (M
 		arg.ChannelID,
 		arg.SenderID,
 		arg.Content,
-		arg.ParentID,
+		arg.ThreadID,
 		arg.MsgType,
 	)
 	var i Message
 	err := row.Scan(
 		&i.ID,
 		&i.ChannelID,
+		&i.DmID,
 		&i.SenderID,
 		&i.Content,
-		&i.ParentID,
+		&i.ThreadID,
 		&i.MsgType,
+		&i.CallID,
 		&i.CreatedAt,
 		&i.EditedAt,
 	)
@@ -66,7 +68,7 @@ const editMessage = `-- name: EditMessage :one
 UPDATE messages
 SET content = $2, edited_at = NOW()
 WHERE id = $1 AND sender_id = $3
-RETURNING id, channel_id, sender_id, content, parent_id, msg_type, created_at, edited_at
+RETURNING id, channel_id, dm_id, sender_id, content, thread_id, msg_type, call_id, created_at, edited_at
 `
 
 type EditMessageParams struct {
@@ -81,10 +83,12 @@ func (q *Queries) EditMessage(ctx context.Context, arg EditMessageParams) (Messa
 	err := row.Scan(
 		&i.ID,
 		&i.ChannelID,
+		&i.DmID,
 		&i.SenderID,
 		&i.Content,
-		&i.ParentID,
+		&i.ThreadID,
 		&i.MsgType,
+		&i.CallID,
 		&i.CreatedAt,
 		&i.EditedAt,
 	)
@@ -97,7 +101,7 @@ SELECT
     m.channel_id,
     m.sender_id,
     m.content,
-    m.parent_id,
+    m.thread_id,
     m.msg_type,
     m.created_at,
     m.edited_at,
@@ -106,7 +110,7 @@ SELECT
 FROM messages m
 JOIN users u ON u.id = m.sender_id
 WHERE m.channel_id = $1
-AND m.parent_id IS NULL
+AND m.thread_id IS NULL
 AND ($2::timestamptz IS NULL OR m.created_at < $2)
 ORDER BY m.created_at DESC
 LIMIT $3
@@ -123,8 +127,8 @@ type GetChannelMessagesRow struct {
 	ChannelID      pgtype.UUID        `json:"channel_id"`
 	SenderID       pgtype.UUID        `json:"sender_id"`
 	Content        string             `json:"content"`
-	ParentID       pgtype.UUID        `json:"parent_id"`
-	MsgType        pgtype.Text        `json:"msg_type"`
+	ThreadID       pgtype.UUID        `json:"thread_id"`
+	MsgType        string             `json:"msg_type"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	EditedAt       pgtype.Timestamptz `json:"edited_at"`
 	SenderUsername string             `json:"sender_username"`
@@ -145,7 +149,7 @@ func (q *Queries) GetChannelMessages(ctx context.Context, arg GetChannelMessages
 			&i.ChannelID,
 			&i.SenderID,
 			&i.Content,
-			&i.ParentID,
+			&i.ThreadID,
 			&i.MsgType,
 			&i.CreatedAt,
 			&i.EditedAt,
@@ -163,7 +167,7 @@ func (q *Queries) GetChannelMessages(ctx context.Context, arg GetChannelMessages
 }
 
 const getMessageByID = `-- name: GetMessageByID :one
-SELECT id, channel_id, sender_id, content, parent_id, msg_type, created_at, edited_at from messages WHERE id = $1 LIMIT 1
+SELECT id, channel_id, dm_id, sender_id, content, thread_id, msg_type, call_id, created_at, edited_at from messages WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetMessageByID(ctx context.Context, id pgtype.UUID) (Message, error) {
@@ -172,10 +176,12 @@ func (q *Queries) GetMessageByID(ctx context.Context, id pgtype.UUID) (Message, 
 	err := row.Scan(
 		&i.ID,
 		&i.ChannelID,
+		&i.DmID,
 		&i.SenderID,
 		&i.Content,
-		&i.ParentID,
+		&i.ThreadID,
 		&i.MsgType,
+		&i.CallID,
 		&i.CreatedAt,
 		&i.EditedAt,
 	)
@@ -188,7 +194,7 @@ SELECT
     m.channel_id,
     m.sender_id,
     m.content,
-    m.parent_id,
+    m.thread_id,
     m.msg_type,
     m.created_at,
     m.edited_at,
@@ -196,7 +202,7 @@ SELECT
     u.avatar_url AS sender_avatar 
 FROM messages m
 JOIN users u ON u.id = m.sender_id
-WHERE m.parent_id = $1
+WHERE m.thread_id = $1
 ORDER BY m.created_at ASC
 `
 
@@ -205,16 +211,16 @@ type GetThreadMessagesRow struct {
 	ChannelID      pgtype.UUID        `json:"channel_id"`
 	SenderID       pgtype.UUID        `json:"sender_id"`
 	Content        string             `json:"content"`
-	ParentID       pgtype.UUID        `json:"parent_id"`
-	MsgType        pgtype.Text        `json:"msg_type"`
+	ThreadID       pgtype.UUID        `json:"thread_id"`
+	MsgType        string             `json:"msg_type"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	EditedAt       pgtype.Timestamptz `json:"edited_at"`
 	SenderUsername string             `json:"sender_username"`
 	SenderAvatar   pgtype.Text        `json:"sender_avatar"`
 }
 
-func (q *Queries) GetThreadMessages(ctx context.Context, parentID pgtype.UUID) ([]GetThreadMessagesRow, error) {
-	rows, err := q.db.Query(ctx, getThreadMessages, parentID)
+func (q *Queries) GetThreadMessages(ctx context.Context, threadID pgtype.UUID) ([]GetThreadMessagesRow, error) {
+	rows, err := q.db.Query(ctx, getThreadMessages, threadID)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +233,7 @@ func (q *Queries) GetThreadMessages(ctx context.Context, parentID pgtype.UUID) (
 			&i.ChannelID,
 			&i.SenderID,
 			&i.Content,
-			&i.ParentID,
+			&i.ThreadID,
 			&i.MsgType,
 			&i.CreatedAt,
 			&i.EditedAt,

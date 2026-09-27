@@ -34,16 +34,18 @@ const (
 )
 
 type Message struct {
-	Type     string `json:"type"`
-	SenderID string `json:"sender_id"`
-	RoomID   string `json:"room_id"`
-	Content  string `json:"content"`
-	ParentID string `json:"parent_id,omitempty"` // ← add
+	ID         string `json:"id"`
+	Type       string `json:"msg_type"`
+	SenderID   string `json:"sender_id"`
+	ChannelID  string `json:"channel_id"`
+	Content    string `json:"content"`
+	ThreadID   string `json:"thread_id,omitempty"` // ← add
+	SenderName string `json:"sender_username"`
 }
 
 // InboundCallMsg is what client sends for call.start / call.join / call.leave
 type InboundCallMsg struct {
-	Type      string `json:"type"`
+	Type      string `json:"msg_type"`
 	ChannelID string `json:"channel_id"`
 	ThreadID  string `json:"thread_id,omitempty"`
 	CallID    string `json:"call_id,omitempty"`
@@ -51,7 +53,7 @@ type InboundCallMsg struct {
 
 // SignalMsg carries WebRTC offer / answer / ICE candidates
 type SignalMsg struct {
-	Type         string `json:"type"`
+	Type         string `json:"msg_type"`
 	CallID       string `json:"call_id"`
 	TargetUserID string `json:"target_user_id,omitempty"`
 	FromUserID   string `json:"from_user_id,omitempty"`
@@ -61,7 +63,7 @@ type SignalMsg struct {
 
 // OutboundCallEvent is what server sends to clients about call state
 type OutboundCallEvent struct {
-	Type          string   `json:"type"`
+	Type          string   `json:"msg_type"`
 	CallID        string   `json:"call_id"`
 	ChannelID     string   `json:"channel_id,omitempty"`
 	ThreadID      string   `json:"thread_id,omitempty"`
