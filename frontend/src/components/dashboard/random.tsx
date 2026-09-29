@@ -30,16 +30,17 @@ import {
 
 import { createFileRoute } from '@tanstack/react-router'
 import CallOverlay from '#/components/call/CallOverlay'
-import { MESSAGES } from '#/components/dashboard/mock'
+import { CHANNELS, MESSAGES, ONLINE_MEMBERS } from '#/components/dashboard/mock'
 import type { CallSummary, Message } from '#/components/dashboard/mock'
 import Sidebar from '#/components/dashboard/sidebar'
-import { Avatar, AvatarFallback, AvatarGroup } from '#/components/ui/avatar'
-import { getWorkspaceBySlug } from '#/lib/services/workspace.service'
-import { WorkspaceNotFound } from '#/components/workspace/WorkspaceNotFound'
-import { useGetChannel, useGetChannels } from '#/hooks/use-channel'
-import { parentRoute } from '../route'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '#/components/ui/avatar'
 
-export const Route = createFileRoute('/workspace/$slug/')({
+export const Route = createFileRoute('/workspace/$slug/channel/$id/')({
   component: Dashboard,
 })
 
@@ -259,26 +260,26 @@ function MessageBubble({
 // ── Channel header ─────────────────────────────────────────────────────────
 
 function ChannelHeader({
-  workspace_id,
-  channel_id,
+  channelName,
   onCallStart,
 }: {
-  workspace_id: string
-  channel_id: string
+  channelName: string
   onCallStart: () => void
 }) {
-  const { data: channel } = useGetChannel(workspace_id, channel_id)
-  console.log('channel header', channel)
+  const online = ONLINE_MEMBERS.filter((m) => m.online)
+  const visibleOnline = online.slice(0, 4)
+  const remainingOnline = online.length - visibleOnline.length
+
   return (
     <div className="h-12 flex items-center justify-between px-4 border-b border-[#2A2A3A] shrink-0 bg-[#16161F]">
       <div className="flex items-center gap-2.5">
         <Hash className="w-4 h-4 text-[#4A4860]" />
         <span className="text-sm font-semibold text-[#F5F0E8]">
-          {channel?.data.channel.name}
+          {channelName}
         </span>
         <div className="flex items-center gap-1.5 ml-1">
           <AvatarGroup className="-space-x-1.5">
-            {channel?.data.channel_members.map((m) => (
+            {visibleOnline.map((m) => (
               <Avatar
                 key={m.id}
                 className="h-5 w-5 rounded-full ring-2 ring-[#16161F]"
@@ -286,23 +287,21 @@ function ChannelHeader({
                 <AvatarFallback
                   className={cn(
                     'text-[8px] font-bold',
-                    avatarColorClasses[
-                      avatarColorByLetter[m.username] ?? 'teal'
-                    ],
+                    avatarColorClasses[avatarColorByLetter[m.avatar] ?? 'teal'],
                   )}
                 >
-                  {m.avatar_url}
+                  {m.avatar}
                 </AvatarFallback>
               </Avatar>
             ))}
-            {/* {remainingOnline > 0 && (
+            {remainingOnline > 0 && (
               <AvatarGroupCount className="h-5 w-5 text-[8px] ring-2 ring-[#16161F]">
                 +{remainingOnline}
               </AvatarGroupCount>
-            )} */}
+            )}
           </AvatarGroup>
           <span className="text-[10px] text-[#4A4860]">
-            {/* {online.length} online */}
+            {online.length} online
           </span>
         </div>
       </div>
@@ -432,55 +431,45 @@ function ActiveCallBanner({ onLeave }: { onLeave: () => void }) {
 // ── Main dashboard ─────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { workspace } = Route.useLoaderData()
-  const { user } = parentRoute.useLoaderData()
-  console.log('workspace details', workspace)
-  const { data: channels } = useGetChannels(workspace.data.workspace.id)
-  const members = workspace.data.members
-  const [activeChannel, setActiveChannel] = useState(channels?.data[0].id)
+  const [activeChannel, setActiveChannel] = useState('2')
   const [activeCallVisible, setActiveCallVisible] = useState(false)
-  const activeChannelData = channels?.data.find((c) => c.id === activeChannel)
+  const activeChannelData = CHANNELS.find((c) => c.id === activeChannel)
   const [inCall, setInCall] = useState(false)
   return (
-    <div className="h-screen flex bg-[#0A0A0F] overflow-hidden font-mono">
-      {/* main */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
-        {inCall && <CallOverlay onEnd={() => setInCall(false)} />}
-        <ChannelHeader
-          workspace_id={workspace.data.workspace.id}
-          channel_id={activeChannelData?.id ?? channels?.data[0].id!}
-          onCallStart={() => setActiveCallVisible(true)}
-        />
+    <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      {inCall && <CallOverlay onEnd={() => setInCall(false)} />}
+      <ChannelHeader
+        channelName={activeChannelData?.name ?? 'general'}
+        onCallStart={() => setActiveCallVisible(true)}
+      />
 
-        {activeCallVisible && (
-          <ActiveCallBanner onLeave={() => setActiveCallVisible(false)} />
-        )}
+      {activeCallVisible && (
+        <ActiveCallBanner onLeave={() => setActiveCallVisible(false)} />
+      )}
 
-        {/* messages */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="py-4 space-y-0.5">
-            {/* channel start marker */}
-            <div className="px-4 pb-4 mb-2 border-b border-[#2A2A3A]">
-              <div className="w-10 h-10 rounded-xl bg-[#E8A838]/10 border border-[#E8A838]/20 flex items-center justify-center mb-3">
-                <Hash className="w-5 h-5 text-[#E8A838]" />
-              </div>
-              <h2 className="text-lg font-semibold text-[#F5F0E8] mb-1 font-display">
-                # {activeChannelData?.name}
-              </h2>
-              <p className="text-xs text-[#4A4860]">
-                This is the beginning of #{activeChannelData?.name}. Start a
-                conversation or call from any message.
-              </p>
+      {/* messages */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="py-4 space-y-0.5">
+          {/* channel start marker */}
+          <div className="px-4 pb-4 mb-2 border-b border-[#2A2A3A]">
+            <div className="w-10 h-10 rounded-xl bg-[#E8A838]/10 border border-[#E8A838]/20 flex items-center justify-center mb-3">
+              <Hash className="w-5 h-5 text-[#E8A838]" />
             </div>
-
-            {MESSAGES.map((msg) => (
-              <MessageBubble key={msg.id} msg={msg} />
-            ))}
+            <h2 className="text-lg font-semibold text-[#F5F0E8] mb-1 font-display">
+              # {activeChannelData?.name}
+            </h2>
+            <p className="text-xs text-[#4A4860]">
+              This is the beginning of #{activeChannelData?.name}. Start a
+              conversation or call from any message.
+            </p>
           </div>
-        </ScrollArea>
+          {MESSAGES.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
+          ))}
+        </div>
+      </ScrollArea>
 
-        <MessageInput placeholder={`Message #${activeChannelData?.name}`} />
-      </div>
+      <MessageInput placeholder={`Message #${activeChannelData?.name}`} />
     </div>
   )
 }

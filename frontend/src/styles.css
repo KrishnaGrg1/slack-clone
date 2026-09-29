@@ -1,11 +1,10 @@
+/* Fonts are loaded via <link> tags in __root.tsx so that Tailwind's inlined
+   @imports cannot push a remote @import behind other CSS statements. */
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
-
-/* ── Google Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
 /* ── ThreadCall design tokens ── */
 :root {

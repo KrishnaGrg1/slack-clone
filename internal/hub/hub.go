@@ -141,7 +141,6 @@ func (h *Hub) Run() {
 		case sig := <-h.signal:
 			// forward to target peer — Go never reads the SDP/ICE content
 			if target, ok := h.users[sig.TargetUserID]; ok {
-				sig.FromUserID = sig.TargetUserID // fixed below
 				payload, err := json.Marshal(sig)
 				if err != nil {
 					continue
@@ -210,7 +209,9 @@ func (h *Hub) EnqueueSignal(signal SignalMsg) {
 func (h *Hub) NotifyRoom(channelID string, payload []byte) {
 	room, ok := h.rooms[channelID]
 	if !ok {
-		log.Fatalf("there is no room=%s", channelID)
+		// nobody is in this room yet — nothing to notify, but never fatal:
+		// a call start can race ahead of the first channel member connecting.
+		log.Printf("no room=%s to notify", channelID)
 		return
 	}
 	for client := range room {

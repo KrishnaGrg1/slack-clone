@@ -61,19 +61,22 @@ export interface LeaveChannelResponse {
 export interface GetChannelMessageInput {
   id: string
 }
+// lib/types/channel.type.ts
 
 export interface Message {
   id: string
   channel_id: string
   sender_id: string
-  content: string
-  thread_id: string
-  msg_type: string
-  created_at: string
-  edited_at: string
   sender_username: string
   sender_avatar: string
+  content: string
+  thread_id: string // renamed from parent_id — empty string = top-level
+  msg_type: 'text' | 'call' | 'call_summary'
+  created_at: string
+  edited_at: string
+  reply_count: number // 0 for new messages / thread replies
 }
+
 export interface GetChannelMessageResponse {
   success: boolean
   message: string

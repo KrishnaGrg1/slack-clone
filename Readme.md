@@ -19,3 +19,14 @@ Thread: "Should we use Redis or Postgres for sessions?"
           - Krishna: implement Redis session store by Friday
           - Rohan: remove Postgres session table migration
 ```
+
+## UI 
+
+### Homepage
+![Alt text](public/homepage.png)
+
+### Login
+![Alt text](public/login.png)
+
+### Workspace
+![Alt text](public/workspace.PNG)

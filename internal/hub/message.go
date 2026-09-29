@@ -41,6 +41,7 @@ type Message struct {
 	Content    string `json:"content"`
 	ThreadID   string `json:"thread_id,omitempty"` // ← add
 	SenderName string `json:"sender_username"`
+	Created_At string `json:"created_at"`
 }
 
 // InboundCallMsg is what client sends for call.start / call.join / call.leave

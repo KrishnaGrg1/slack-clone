@@ -17,7 +17,7 @@ const UserNameKey contextKey = "userName"
 func Auth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			tokenStr := extractTokenFromHeader(r)
+			tokenStr := extractToken(r)
 
 			token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -62,20 +62,22 @@ func GetUserDetails(r *http.Request) (string, string, bool) {
 	return userID, userName, ok
 }
 
-// extract token from middleware
-func extractTokenFromHeader(r *http.Request) string {
+// extractToken reads the JWT from the request.
+//
+// Order: cookie → Authorization header → query param.
+// The query param fallback exists because browsers cannot set custom headers
+// on a WebSocket handshake, so the socket client must pass the token in the URL.
+func extractToken(r *http.Request) string {
 	if cookie, err := r.Cookie("token"); err == nil {
 		if cookie.Value != "" {
 			return cookie.Value
 		}
 	}
-	authHeader := r.Header.Get("Authorization")
-	if authHeader != "" {
+	if authHeader := r.Header.Get("Authorization"); authHeader != "" {
 		parts := strings.Split(authHeader, " ")
 		if len(parts) == 2 && parts[0] == "Bearer" {
 			return parts[1]
 		}
 	}
-	return ""
-
+	return r.URL.Query().Get("token")
 }

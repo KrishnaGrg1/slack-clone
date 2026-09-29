@@ -49,15 +49,17 @@ export default function Sidebar({
           </span>
 
           <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              }
+            />
 
             <TooltipContent>Workspace menu</TooltipContent>
           </Tooltip>
@@ -82,15 +84,17 @@ export default function Sidebar({
               </span>
 
               <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-5 w-5 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-transparent"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-transparent"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  }
+                />
 
                 <TooltipContent>Add channel</TooltipContent>
               </Tooltip>
@@ -183,29 +187,33 @@ export default function Sidebar({
 
           <div className="flex items-center gap-0.5">
             <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                >
-                  <Bell className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
 
               <TooltipContent>Notifications</TooltipContent>
             </Tooltip>
 
             <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
 
               <TooltipContent>Settings</TooltipContent>
             </Tooltip>

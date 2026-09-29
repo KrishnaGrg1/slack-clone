@@ -36,14 +36,14 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// try ring buffer first
-	cached := h.hub.GetHistory(channelID)
-	if len(cached) > 0 {
-		response.Success(w, http.StatusOK, "messages fetched", map[string]any{
-			"messages": cached,
-			"source":   "cache",
-		})
-		return
-	}
+	// cached := h.hub.GetHistory(channelID)
+	// if len(cached) > 0 {
+	// 	response.Success(w, http.StatusOK, "messages fetched", map[string]any{
+	// 		"messages": cached,
+	// 		"source":   "cache",
+	// 	})
+	// 	return
+	// }
 
 	// fall back to DB
 	var before *time.Time

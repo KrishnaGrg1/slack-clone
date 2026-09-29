@@ -24,7 +24,9 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	// Must fit SDP payloads — a single WebRTC offer is typically 2-4 KB, and
+	// ICE candidate batches add more, so keep headroom well above that.
+	maxMessageSize = 64 * 1024
 )
 
 var (
@@ -103,6 +105,7 @@ func (c *Client) readPump() {
 				Content:    payload.Content,
 				ChannelID:  c.channelID,
 				ThreadID:   payload.ThreadID,
+				Created_At: time.Now().Format("2006-01-02T15:04:05.000000-07:00"),
 			}
 
 		//Typing
@@ -219,6 +222,7 @@ func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Reques
 	channelID := r.URL.Query().Get("channel_id")
 	if channelID == "" {
 		log.Println("missing channelID")
+		http.Error(w, "missing channel_id", http.StatusBadRequest)
 		return
 	}
 
@@ -255,7 +259,7 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 		// notify everyone else in the channel: incoming call
 
 		incoming := OutboundCallEvent{
-			Type:      TypeMessageNew,
+			Type:      TypeCallIncoming,
 			CallID:    call.ID,
 			ChannelID: msg.ChannelID,
 			ThreadID:  msg.ThreadID,
@@ -273,7 +277,8 @@ func (c *Client) handleCallJoin(
 ) {
 	call, existing, ok := c.hub.callManager.JoinCall(msg.CallID, c.senderID, c.senderName)
 	if !ok {
-		log.Fatalf("failed joining call by=%s callID=%s", c.senderName, msg.CallID)
+		// never Fatal: a bad call_id from one client must not kill the process
+		log.Printf("failed joining call by=%s callID=%s", c.senderName, msg.CallID)
 		return
 	}
 	// send to ownself who who are in the call
@@ -297,7 +302,7 @@ func (c *Client) handleCallJoin(
 func (c *Client) handleCallLeave(msg InboundCallMsg) {
 	departure, ok := c.hub.callManager.LeaveCall(c.senderID, msg.CallID)
 	if !ok {
-		log.Fatalf("failed to leave call")
+		log.Printf("failed to leave call user=%s callID=%s", c.senderID, msg.CallID)
 		return
 	}
 

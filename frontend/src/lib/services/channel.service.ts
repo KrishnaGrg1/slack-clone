@@ -128,10 +128,8 @@ export const getChannelMessage = createServerFn({ method: 'GET' })
           headers,
         },
       )
-      console.log("channel Message",res.data)
       return res.data
     } catch (error: unknown) {
-      console.log('blah blah', error)
       throw new Error(getApiErrorMessage(error, 'Failed to get channel'))
     }
   })
