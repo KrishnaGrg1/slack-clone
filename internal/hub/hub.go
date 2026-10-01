@@ -77,15 +77,6 @@ func (h *Hub) Run() {
 			log.Printf("%s joined room %s", client.senderName, client.channelID)
 
 		case client := <-h.unregister:
-			// if room, ok := h.rooms[client.channelID]; ok {
-			// 	if _, exists := room[client]; exists {
-			// 		delete(room, client)
-			// 		close(client.send)
-			// 		if len(room) == 0 {
-			// 			delete(h.rooms, client.channelID)
-			// 		}
-			// 	}
-			// }
 			if room, ok := h.rooms[client.channelID]; ok {
 				if _, exists := h.rooms[client.channelID][client]; exists {
 					delete(room, client)
@@ -96,6 +87,27 @@ func (h *Hub) Run() {
 				}
 			}
 			delete(h.users, client.senderID)
+
+			// Clean up call state — notify remaining peers that this user left.
+			if departure, ok := h.callManager.LeaveAllCalls(client.senderID, client.channelID); ok {
+				event := OutboundCallEvent{
+					Type:   TypeCallPeerLeft,
+					CallID: departure.CallID,
+					UserID: client.senderID,
+				}
+				if departure.Ended {
+					event.Type = TypeCallEnded
+				}
+				payload, err := json.Marshal(event)
+				if err != nil {
+					log.Printf("failed to marshal call leave event: %v", err)
+					continue
+				}
+				for _, peerID := range departure.Remaining {
+					h.SendToUser(peerID, payload)
+				}
+			}
+
 		case message := <-h.broadcast:
 			room, ok := h.rooms[message.ChannelID]
 			if !ok {

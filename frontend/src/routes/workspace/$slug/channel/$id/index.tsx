@@ -18,17 +18,10 @@ import {
   SendHorizontal,
   Smile,
   Video,
-  type LucideIcon,
 } from 'lucide-react'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactNode,
-} from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { ScrollArea } from '#/components/ui/scroll-area'
@@ -42,7 +35,9 @@ import {
 import { useGetChannel, useGetChannels } from '#/hooks/use-channel'
 import { useChannelMessages, channelMessagesKey } from '#/hooks/use-message'
 import { useChannelSocket } from '#/hooks/use-socket'
+
 import { parentRoute } from '#/routes/workspace/route'
+import type { CallSignalEvent } from '#/lib/types/socket.types'
 import { cn, uniqueId } from '#/lib/utils'
 import type {
   Message,
@@ -430,28 +425,39 @@ function TypingIndicator({ names }: { names: string[] }) {
   )
 }
 
-// ── ActiveCallBanner ──────────────────────────────────────────────────────────
+// ── IncomingCallBanner ─────────────────────────────────────────────────────
 
-function ActiveCallBanner({ onLeave }: { onLeave: () => void }) {
+function IncomingCallBanner({
+  onJoin,
+  onDismiss,
+  callerName,
+}: {
+  onJoin: () => void
+  onDismiss: () => void
+  callerName?: string
+}) {
   return (
     <div className="mx-4 mt-3 flex shrink-0 items-center gap-3 rounded-xl border border-[#1D9E75]/25 bg-[#1D9E75]/10 px-3.5 py-2.5">
       <div className="flex items-center gap-2">
         <Circle className="h-2 w-2 animate-pulse fill-[#1D9E75] text-[#1D9E75]" />
         <span className="text-xs font-semibold text-[#1D9E75]">
-          Call in progress
+          Incoming call
         </span>
       </div>
-      <span className="text-[11px] text-[#7A7890]">krishna, rohan · 0:34</span>
+      <span className="text-[11px] text-[#7A7890]">
+        {callerName ? `${callerName} is calling` : 'Someone is calling'}
+      </span>
       <div className="ml-auto flex items-center gap-1.5">
         <button
           type="button"
+          onClick={onJoin}
           className="rounded-md bg-[#1D9E75] px-3 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-[#1D9E75]/80"
         >
           Join
         </button>
         <button
           type="button"
-          onClick={onLeave}
+          onClick={onDismiss}
           className="rounded-md px-3 py-1 text-[11px] font-semibold text-[#E05555] transition-colors hover:bg-[#E05555]/10"
         >
           Dismiss
@@ -465,7 +471,7 @@ function ActiveCallBanner({ onLeave }: { onLeave: () => void }) {
 
 function RouteComponent() {
   const { id } = Route.useParams()
-  const [activeCallVisible, setActiveCallVisible] = useState(false)
+  const signalRef = useRef<((msg: CallSignalEvent) => void) | null>(null)
   const { workspace } = routeApi.useLoaderData()
   const { user } = parentRoute.useLoaderData()
   const queryClient = useQueryClient()
@@ -548,6 +554,7 @@ function RouteComponent() {
   const { send } = useChannelSocket(id, workspaceId, {
     onTyping: addTyping,
     onTypingStop: removeTyping,
+    onSignal: (msg) => signalRef.current?.(msg),
   })
 
   // ── typing debounce — only fire typing.start once per 2s ────────────────────
@@ -649,7 +656,7 @@ function RouteComponent() {
                 render={
                   <button
                     type="button"
-                    onClick={() => setActiveCallVisible(true)}
+                    // onClick={() => call.join({ video: true, isStart: true })}
                     className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-[#B8B4AC] transition-colors hover:bg-[#2A2A3A] hover:text-[#F5F0E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8A838]/60"
                   />
                 }
@@ -679,9 +686,21 @@ function RouteComponent() {
           </div>
         </header>
 
-        {activeCallVisible && (
-          <ActiveCallBanner onLeave={() => setActiveCallVisible(false)} />
+        {/* {call.incomingCall && (
+          <IncomingCallBanner
+            callerName={names[call.incomingCall.from_user_id]}
+            onJoin={() => {
+              call.incomingCall
+                ? call.join({ video: true, callId: call.incomingCall.call_id })
+                : call.join({ video: true, isStart: true })
+            }}
+            onDismiss={() => call.leave()}
+          />
         )}
+
+        {call.status === 'active' && call.local && (
+          <CallPanel call={call} names={names} />
+        )} */}
 
         {/* Messages */}
         <div className="relative min-h-0 flex-1">

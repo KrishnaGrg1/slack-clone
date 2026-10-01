@@ -1,6 +1,6 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { AlertCircle, ArrowLeft, Home, RefreshCw } from 'lucide-react'
-import { Typography } from '@/components/ui/typography'
+import { Typography } from '#/components/ui/typography'
 import { Button } from '../ui/button'
 
 interface WorkspaceNotFoundProps {

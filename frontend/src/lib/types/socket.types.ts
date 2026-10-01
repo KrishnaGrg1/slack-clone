@@ -21,7 +21,7 @@ export type CallIncomingEvent = {
   call_id: string
   channel_id: string
   thread_id?: string
-  sender_id: string
+  user_id: string // initiator ID (was sender_id — matches backend OutboundCallEvent.UserID)
 }
 
 export type CallStartedEvent = {
@@ -29,7 +29,13 @@ export type CallStartedEvent = {
   call_id: string
   channel_id: string
   thread_id?: string
-  user_id: string
+  user_id?: string // not sent by backend for call.started
+  existing_peers?: string[]
+}
+
+export type CallJoinedEvent = {
+  msg_type: 'call.joined'
+  call_id: string
   existing_peers?: string[]
 }
 
@@ -50,6 +56,29 @@ export type CallEndedEvent = {
   call_id: string
 }
 
+// rtc.* events are forwarded by the server as SignalMsg.
+// The server sets from_user_id from the authenticated connection.
+export type RTCOfferRelayEvent = {
+  msg_type: 'rtc.offer'
+  call_id: string
+  from_user_id: string
+  sdp: string
+}
+
+export type RTCAnswerRelayEvent = {
+  msg_type: 'rtc.answer'
+  call_id: string
+  from_user_id: string
+  sdp: string
+}
+
+export type RTCIceRelayEvent = {
+  msg_type: 'rtc.ice'
+  call_id: string
+  from_user_id: string
+  candidate: RTCIceCandidateInit
+}
+
 export type ErrorEvent = {
   msg_type: 'error'
   message: string
@@ -60,10 +89,26 @@ export type ServerEvent =
   | TypingEvent
   | CallIncomingEvent
   | CallStartedEvent
+  | CallJoinedEvent
   | CallPeerJoinedEvent
   | CallPeerLeftEvent
   | CallEndedEvent
+  | RTCOfferRelayEvent
+  | RTCAnswerRelayEvent
+  | RTCIceRelayEvent
   | ErrorEvent
+
+// ── Events that carry only signaling (call.* and rtc.*) ──
+export type CallSignalEvent =
+  | CallIncomingEvent
+  | CallStartedEvent
+  | CallJoinedEvent
+  | CallPeerJoinedEvent
+  | CallPeerLeftEvent
+  | CallEndedEvent
+  | RTCOfferRelayEvent
+  | RTCAnswerRelayEvent
+  | RTCIceRelayEvent
 
 // client
 
@@ -81,6 +126,7 @@ export type CallStartEvent = {
   msg_type: 'call.start'
   channel_id: string
   thread_id?: string
+  call_id?:string
 }
 
 export type CallJoinEvent = {
@@ -92,6 +138,7 @@ export type CallJoinEvent = {
 
 export type CallLeaveEvent = {
   msg_type: 'call.leave'
+  channel_id: string
   call_id: string
 }
 

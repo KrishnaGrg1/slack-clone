@@ -12,6 +12,9 @@ import (
 
 type Querier interface {
 	AddWorkspaceMember(ctx context.Context, arg AddWorkspaceMemberParams) error
+	CreateCall(ctx context.Context, channelID pgtype.UUID) (Call, error)
+	CreateCallParticipants(ctx context.Context, arg CreateCallParticipantsParams) (CallParticipant, error)
+	CreateCallSummaries(ctx context.Context, arg CreateCallSummariesParams) (CallSummary, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)

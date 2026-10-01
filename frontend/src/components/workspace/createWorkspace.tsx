@@ -1,5 +1,5 @@
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '#/components/ui/alert'
+import { cn } from '#/lib/utils'
 import { useForm } from '@tanstack/react-form'
 import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'

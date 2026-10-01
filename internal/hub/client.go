@@ -250,7 +250,7 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 		event := OutboundCallEvent{
 			Type:      TypeCallStarted,
 			CallID:    call.ID,
-			ChannelID: msg.ChannelID,
+			ChannelID: c.channelID,
 			ThreadID:  msg.ThreadID,
 		}
 		payload, _ := json.Marshal(event)
@@ -261,7 +261,7 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 		incoming := OutboundCallEvent{
 			Type:      TypeCallIncoming,
 			CallID:    call.ID,
-			ChannelID: msg.ChannelID,
+			ChannelID: c.channelID,
 			ThreadID:  msg.ThreadID,
 			UserID:    call.InitiatorID,
 		}

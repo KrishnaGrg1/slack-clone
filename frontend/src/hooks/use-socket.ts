@@ -3,8 +3,15 @@ import { useEffect, useRef } from 'react'
 import { ChatSocket } from '#/lib/websocket/client'
 import { getWsToken } from '#/lib/services/ws-token'
 import { uniqueId } from '#/lib/utils'
-import type { ClientEvent, ServerEvent } from '#/lib/types/socket.types'
-import type { Message, GetChannelMessageResponse  } from '#/lib/types/channel.type'
+import type {
+  ClientEvent,
+  ServerEvent,
+  CallSignalEvent,
+} from '#/lib/types/socket.types'
+import type {
+  Message,
+  GetChannelMessageResponse,
+} from '#/lib/types/channel.type'
 
 // imported from use-message so both hooks share the exact same key
 import { channelMessagesKey } from '#/hooks/use-message'
@@ -19,7 +26,7 @@ export function useChannelSocket(
   callbacks?: {
     onTyping?: (userID: string, username: string) => void
     onTypingStop?: (userID: string) => void
-    onCallIncoming?: (callID: string) => void
+    onSignal?: (msg: CallSignalEvent) => void
   },
 ) {
   const queryClient = useQueryClient()
@@ -116,20 +123,19 @@ export function useChannelSocket(
           break
         }
 
-        // ── incoming call ─────────────────────────────────────────────────────
-        case 'call.incoming': {
-          cbs?.onCallIncoming?.(event.call_id)
-          break
-        }
-
         case 'error': {
           console.error('[ws] server error:', event.message)
           break
         }
 
-        // call.started / call.peer_joined / call.peer_left / call.ended
-        // handled by the call hook (future)
         default:
+          // Forward all call.* and rtc.* messages to the call hook.
+          if (
+            event.msg_type.startsWith('call.') ||
+            event.msg_type.startsWith('rtc.')
+          ) {
+            cbs?.onSignal?.(event)
+          }
           break
       }
     })

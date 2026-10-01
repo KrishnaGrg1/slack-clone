@@ -10,7 +10,8 @@ import (
 type CallManager struct {
 	calls  map[string]*Call
 	byRoom map[string]string
-	mu     sync.Mutex // plain Mutex — most ops write
+	// store  *store.Store
+	mu sync.Mutex // plain Mutex — most ops write
 }
 
 func NewCallManager() *CallManager {
@@ -42,7 +43,7 @@ func (cm *CallManager) StartCall(userID, name, channelID string) (call *Call, ex
 		}
 		delete(cm.byRoom, channelID)
 	}
-
+	// cm.store.Queries.CreateCall(r.)
 	call = &Call{
 		ID:            uuid.New().String(),
 		channelID:     channelID,

@@ -292,10 +292,10 @@ cat > components.json << 'EOF'
     "prefix": ""
   },
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
+    "components": "#/components",
+    "utils": "#/lib/utils",
+    "ui": "#/components/ui",
+    "lib": "#/lib",
     "hooks": "@/hooks"
   }
 }
@@ -317,6 +317,6 @@ echo "  cd $PROJECT_NAME"
 echo "  pnpm dev"
 echo ""
 echo "📚 Import components like:"
-echo "  import { Button } from '@/components/ui/button'"
-echo "  import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'"
-echo "  import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'"
+echo "  import { Button } from '#/components/ui/button'"
+echo "  import { Card, CardHeader, CardTitle, CardContent } from '#/components/ui/card'"
+echo "  import { Dialog, DialogContent, DialogTrigger } from '#/components/ui/dialog'"

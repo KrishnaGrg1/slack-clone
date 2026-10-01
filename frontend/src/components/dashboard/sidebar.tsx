@@ -7,20 +7,20 @@ import {
   Settings,
 } from 'lucide-react'
 
-import { Avatar, AvatarBadge, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarBadge, AvatarFallback } from '#/components/ui/avatar'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
+import { ScrollArea } from '#/components/ui/scroll-area'
+import { Separator } from '#/components/ui/separator'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '#/components/ui/tooltip'
 
-import { cn } from '@/lib/utils'
-import type { Channel } from '@/lib/types/channel.type'
+import { cn } from '#/lib/utils'
+import type { Channel } from '#/lib/types/channel.type'
 import type { User } from '#/lib/types/auth.type'
 import { Link } from '@tanstack/react-router'
 import type { Workspace, WorkspaceMember } from '#/lib/types/workspace.type'

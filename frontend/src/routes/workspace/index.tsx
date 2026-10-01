@@ -38,7 +38,8 @@ function RouteComponent() {
   const { user, workspaces } = parentRoute.useLoaderData()
   console.log('data', user)
   console.log('workspace', workspaces)
-  const hasWorkspaces = workspaces.workspaces.length > 0
+  const workspaceList = workspaces?.workspaces ?? []
+  const hasWorkspaces = workspaceList.length > 0
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground">

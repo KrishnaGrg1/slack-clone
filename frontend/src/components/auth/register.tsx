@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '#/components/ui/alert'
+import { cn } from '#/lib/utils'
 import { useForm } from '@tanstack/react-form'
 import { Eye, EyeOff } from 'lucide-react'
 import { useRegister } from '#/hooks/use-auth'
@@ -180,8 +180,8 @@ export default function RegisterForm() {
           onChange: ({ value }) =>
             !value
               ? 'Password is required'
-              : value.length < 6
-                ? 'Password must be at least 6 characters'
+              : value.length < 8
+                ? 'Password must be at least 8 characters'
                 : undefined,
         }}
       >

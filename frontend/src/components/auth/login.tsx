@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '#/components/ui/alert'
+import { cn } from '#/lib/utils'
 import { useForm } from '@tanstack/react-form'
 import { Eye, EyeOff } from 'lucide-react'
 import { useLogin } from '#/hooks/use-auth'
