@@ -70,7 +70,7 @@ func (cm *CallManager) JoinCall(callID, userID, name string) (call *Call, existi
 
 type Departure struct {
 	CallID    string
-	channelID string
+	ChannelID string // was channelID
 	Remaining []string
 	Ended     bool
 }
@@ -100,7 +100,7 @@ func (cm *CallManager) removeLocked(call *Call, userID string) (Departure, bool)
 
 	return Departure{
 		CallID:    call.ID,
-		channelID: call.channelID,
+		ChannelID: call.channelID,
 		Remaining: remaining,
 		Ended:     ended,
 	}, true

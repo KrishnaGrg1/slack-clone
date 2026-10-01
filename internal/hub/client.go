@@ -182,6 +182,9 @@ func (c *Client) writePump() {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				return
+			}
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
@@ -268,7 +271,15 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 		inPayload, _ := json.Marshal(incoming)
 		c.hub.NotifyRoom(c.channelID, inPayload)
 	} else {
-		c.sendExistingPeers(msg.CallID, existing)
+		c.sendExistingPeers(call.ID, existing)
+		perrJoined, _ := json.Marshal(OutboundCallEvent{
+			Type:   TypeCallPeerJoined,
+			CallID: call.ID,
+			UserID: c.senderID,
+		})
+		for _, perr := range existing {
+			c.hub.SendToUser(perr.ID, perrJoined)
+		}
 	}
 }
 
@@ -316,9 +327,17 @@ func (c *Client) handleCallLeave(msg InboundCallMsg) {
 	}
 	payload, _ := json.Marshal(event)
 
-	for _, peerID := range departure.Remaining {
-		c.hub.SendToUser(peerID, payload)
+	if departure.Ended {
+		// nobody is left in the call, so tell the whole channel to clear the banner
+		c.hub.NotifyRoom(departure.ChannelID, payload)
+	} else {
+		for _, peerID := range departure.Remaining {
+			c.hub.SendToUser(peerID, payload)
+		}
 	}
+	// for _, peerID := range departure.Remaining {
+	// 	c.hub.SendToUser(peerID, payload)
+	// }
 
 }
 
@@ -330,9 +349,10 @@ func (c *Client) sendExistingPeers(callID string, existing []call.Participant) {
 		ids[i] = k.ID
 	}
 	payload, _ := json.Marshal(OutboundCallEvent{
-		Type:          TypeCallJoin,
+		Type:          TypeCallJoined,
 		CallID:        callID,
 		ExistingPeers: ids,
+		UserID:        c.senderID,
 	})
 	c.hub.SendToUser(c.senderID, payload)
 }

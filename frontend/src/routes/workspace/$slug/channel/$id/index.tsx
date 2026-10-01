@@ -43,6 +43,8 @@ import type {
   Message,
   GetChannelMessageResponse,
 } from '#/lib/types/channel.type'
+import { useCall } from '#/hooks/use-call'
+import VideoTile from '#/components/call/VideoTile'
 
 export const Route = createFileRoute('/workspace/$slug/channel/$id/')({
   component: RouteComponent,
@@ -492,6 +494,22 @@ function RouteComponent() {
     )
   }, [channelMessages])
 
+  const memberNameMap = useMemo(
+    () =>
+      Object.fromEntries(
+        (workspace.data.members ?? []).map((member) => [
+          member.id,
+          member.username,
+        ]),
+      ),
+    [workspace.data.members],
+  )
+
+  const callNameFor = useCallback(
+    (userId: string) => memberNameMap[userId] ?? userId.slice(0, 6),
+    [memberNameMap],
+  )
+
   const items = useMemo(() => buildItems(messages), [messages])
   const currentChannel =
     channel?.data.channel ?? channels?.data.find((c) => c.id === id)
@@ -633,6 +651,8 @@ function RouteComponent() {
   const canSend = draft.trim().length > 0
   const channelName = currentChannel?.name ?? 'channel'
 
+  const call = useCall({ channelId: id, userId: user.id, send })
+  signalRef.current = call.handleSignal
   // ── render ───────────────────────────────────────────────────────────────────
   return (
     <TooltipProvider delay={200}>
@@ -656,7 +676,7 @@ function RouteComponent() {
                 render={
                   <button
                     type="button"
-                    // onClick={() => call.join({ video: true, isStart: true })}
+                    onClick={() => call.start()}
                     className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-[#B8B4AC] transition-colors hover:bg-[#2A2A3A] hover:text-[#F5F0E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8A838]/60"
                   />
                 }
@@ -686,19 +706,52 @@ function RouteComponent() {
           </div>
         </header>
 
-        {/* {call.incomingCall && (
+        {call.incomingCall && (
           <IncomingCallBanner
-            callerName={names[call.incomingCall.from_user_id]}
-            onJoin={() => {
-              call.incomingCall
-                ? call.join({ video: true, callId: call.incomingCall.call_id })
-                : call.join({ video: true, isStart: true })
-            }}
-            onDismiss={() => call.leave()}
+            onJoin={call.join}
+            onDismiss={call.dismiss}
+            callerName={callNameFor(call.incomingCall.user_id)}
           />
         )}
+        {call.mediaError && (
+          <p className="mx-4 mt-3 text-xs text-[#E05555]">{call.mediaError}</p>
+        )}
 
-        {call.status === 'active' && call.local && (
+        {call.callId && (
+          <div className="mx-4 mt-3 rounded-xl border border-[#E8A838]/25 bg-[#E8A838]/10 p-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <VideoTile stream={call.local} label="You" muted />
+              {Object.entries(call.remotes).map(([id, stream]) => (
+                <VideoTile key={id} stream={stream} label={callNameFor(id)} />
+              ))}
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-xs text-[#F5F0E8]">
+              <span>In call · {call.peers.length} other(s)</span>
+              <button
+                type="button"
+                onClick={call.toggleMute}
+                className="ml-auto rounded-md px-3 py-1 hover:bg-[#2A2A3A]"
+              >
+                {call.muted ? 'Unmute' : 'Mute'}
+              </button>
+              <button
+                type="button"
+                onClick={call.toggleCamera}
+                className="rounded-md px-3 py-1 hover:bg-[#2A2A3A]"
+              >
+                {call.cameraOff ? 'Camera on' : 'Camera off'}
+              </button>
+              <button
+                type="button"
+                onClick={call.leave}
+                className="rounded-md px-3 py-1 font-semibold text-[#E05555] hover:bg-[#E05555]/10"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        )}
+        {/* {call.status === 'active' && call.local && (
           <CallPanel call={call} names={names} />
         )} */}
 

@@ -126,7 +126,7 @@ export type CallStartEvent = {
   msg_type: 'call.start'
   channel_id: string
   thread_id?: string
-  call_id?:string
+  call_id?: string
 }
 
 export type CallJoinEvent = {

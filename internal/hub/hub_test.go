@@ -1,9 +1,11 @@
 package hub
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/call"
 	"github.com/KrishnaGrg1/slack-clone/internal/db"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/redis/go-redis/v9"
@@ -103,6 +105,39 @@ func TestHubRunDropsSlowClient(t *testing.T) {
 		if _, exists := room[client]; exists {
 			t.Fatal("expected slow client to be removed from room")
 		}
+	}
+}
+
+func TestSendExistingPeersUsesJoinedEventType(t *testing.T) {
+	h := NewHub(nil, nil)
+	client := &Client{
+		hub:        h,
+		senderID:   "bob",
+		senderName: "bob",
+		channelID:  "room-1",
+		send:       make(chan []byte, 1),
+	}
+	h.users[client.senderID] = client
+
+	client.sendExistingPeers("call-123", []call.Participant{{ID: "alice"}, {ID: "charlie"}})
+
+	select {
+	case payload := <-client.send:
+		var event OutboundCallEvent
+		if err := json.Unmarshal(payload, &event); err != nil {
+			t.Fatalf("failed to unmarshal payload: %v", err)
+		}
+		if event.Type != TypeCallJoined {
+			t.Fatalf("expected event type %q, got %q", TypeCallJoined, event.Type)
+		}
+		if event.CallID != "call-123" {
+			t.Fatalf("expected call id call-123, got %q", event.CallID)
+		}
+		if len(event.ExistingPeers) != 2 {
+			t.Fatalf("expected 2 existing peers, got %d", len(event.ExistingPeers))
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for joined event payload")
 	}
 }
 
