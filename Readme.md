@@ -30,3 +30,6 @@ Thread: "Should we use Redis or Postgres for sessions?"
 
 ### Workspace
 ![Alt text](public/workspace.PNG)
+
+### Call
+![Alt text](public/call.PNG)
