@@ -2,6 +2,7 @@ import type { ClientEvent } from '#/lib/types/socket.types'
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  // Step 6 (later): add your TURN server here so calls work across strict networks
 }
 
 export class PeerManager {

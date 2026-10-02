@@ -1,10 +1,15 @@
+// frontend/src/hooks/use-call.ts
+//
+// Used ONLY by the huddle (popup) route. The channel route no longer runs calls.
+// This hook owns: camera/mic, the PeerManager, and all call state.
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { PeerManager } from '#/lib/call/peer-manager'
 import type {
   CallIncomingEvent,
   CallSignalEvent,
   ClientEvent,
 } from '#/lib/types/socket.types'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { PeerManager } from '#/lib/call/peer-manager'
 
 export function useCall({
   channelId,
@@ -15,6 +20,7 @@ export function useCall({
   userId: string
   send: (e: ClientEvent) => void
 }) {
+  // ── state ───────────────────────────────────────────────────────────────────
   const [incomingCall, setIncomingCall] = useState<CallIncomingEvent | null>(
     null,
   )
@@ -25,12 +31,46 @@ export function useCall({
   const [muted, setMuted] = useState(false)
   const [cameraOff, setCameraOff] = useState(false)
   const [mediaError, setMediaError] = useState<string | null>(null)
-  const localRef = useRef<MediaStream | null>(null)
-
   const [remotes, setRemotes] = useState<Record<string, MediaStream>>({})
+
+  // refs: values that must be readable inside callbacks without going stale
+  const localRef = useRef<MediaStream | null>(null)
   const pmRef = useRef<PeerManager | null>(null)
   const callIdRef = useRef<string | null>(null)
 
+  // ── media ───────────────────────────────────────────────────────────────────
+  const stopMedia = useCallback(() => {
+    localRef.current?.getTracks().forEach((t) => t.stop())
+    localRef.current = null
+    setLocal(null)
+  }, [])
+
+  const getMedia = useCallback(async (): Promise<boolean> => {
+    setMediaError(null)
+    try {
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+          video: true,
+        })
+      } catch {
+        // no camera, or camera busy: fall back to microphone only
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      }
+      localRef.current = stream
+      setLocal(stream)
+      setMuted(false)
+      setCameraOff(stream.getVideoTracks().length === 0)
+      return true
+    } catch (err) {
+      console.error('[call] media failed', err)
+      setMediaError('Could not access microphone. Check browser permissions.')
+      return false
+    }
+  }, [])
+
+  // ── peer connections ────────────────────────────────────────────────────────
   // create the PeerManager the first time we need it
   const ensurePM = useCallback(() => {
     if (pmRef.current) return pmRef.current
@@ -51,6 +91,7 @@ export function useCall({
     setRemotes({})
   }, [])
 
+  // ── every call.* and rtc.* message from the server lands here ───────────────
   const handleSignal = useCallback(
     (msg: CallSignalEvent) => {
       switch (msg.msg_type) {
@@ -59,11 +100,13 @@ export function useCall({
           setIncomingCall(msg)
           break
 
+        // I started a brand-new call
         case 'call.started':
           callIdRef.current = msg.call_id
           setCallId(msg.call_id)
           break
 
+        // I joined: here is who is already in the call
         case 'call.joined': {
           callIdRef.current = msg.call_id
           setCallId(msg.call_id)
@@ -76,8 +119,8 @@ export function useCall({
           break
         }
 
+        // someone joined after me: wait, they will send me an offer
         case 'call.peer_joined':
-          // wait: the newcomer will send me an offer
           setPeers((p) => (p.includes(msg.user_id) ? p : [...p, msg.user_id]))
           break
 
@@ -113,56 +156,26 @@ export function useCall({
           break
       }
     },
-    [userId],
+    [userId, ensurePM, closePeers, stopMedia],
   )
 
-  const getMedia = useCallback(async (): Promise<boolean> => {
-    setMediaError(null)
-    try {
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true },
-          video: true,
-        })
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      }
-      localRef.current = stream
-      setLocal(stream)
-      setMuted(false)
-      setCameraOff(stream.getVideoTracks().length == 0)
-      return true
-    } catch (err) {
-      console.error('[call] media failed', err)
-      setMediaError('Couldnot access microphone. Check browser permission')
-      return false
-    }
-  }, [])
-
-  const stopMedia = useCallback(() => {
-    localRef.current?.getTracks().forEach((t) => t.stop())
-    localRef.current = null
-    setLocal(null)
-  }, [])
-
-  // safety net: if the component unmounts mid-call, release the camera
-  useEffect(() => stopMedia, [stopMedia])
-
+  // ── actions ─────────────────────────────────────────────────────────────────
+  // RULE: get the camera/mic FIRST, then tell the server.
   const start = useCallback(async () => {
     if (!(await getMedia())) return
     send({ msg_type: 'call.start', channel_id: channelId })
   }, [send, channelId, getMedia])
 
-  const join = useCallback(async () => {
-    if (!incomingCall) return
-    if (!(await getMedia())) return
-    send({
-      msg_type: 'call.join',
-      channel_id: channelId,
-      call_id: incomingCall.call_id,
-    })
-  }, [send, channelId, incomingCall, getMedia])
+  const join = useCallback(
+    async (id?: string) => {
+      const target = typeof id === 'string' ? id : incomingCall?.call_id
+      if (!target) return
+      if (!(await getMedia())) return
+      send({ msg_type: 'call.join', channel_id: channelId, call_id: target })
+    },
+    [send, channelId, incomingCall, getMedia],
+  )
+
   const leave = useCallback(() => {
     if (callId) {
       send({ msg_type: 'call.leave', channel_id: channelId, call_id: callId })
@@ -173,9 +186,7 @@ export function useCall({
     stopMedia()
   }, [send, channelId, callId, stopMedia, closePeers])
 
-  const dismiss = useCallback(() => {
-    setIncomingCall(null)
-  }, [])
+  const dismiss = useCallback(() => setIncomingCall(null), [])
 
   const toggleMute = useCallback(() => {
     const next = !muted
@@ -188,7 +199,11 @@ export function useCall({
     localRef.current?.getVideoTracks().forEach((t) => (t.enabled = !next))
     setCameraOff(next)
   }, [cameraOff])
+
+  // ── cleanup if the page unmounts mid-call: release camera + connections ─────
+  useEffect(() => stopMedia, [stopMedia])
   useEffect(() => () => pmRef.current?.closeAll(), [])
+
   return {
     handleSignal,
     start,
@@ -199,11 +214,11 @@ export function useCall({
     callId,
     peers,
     local,
+    remotes,
     muted,
     cameraOff,
     mediaError,
     toggleMute,
     toggleCamera,
-    remotes,
   }
 }

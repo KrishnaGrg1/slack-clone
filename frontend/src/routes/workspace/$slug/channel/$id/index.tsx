@@ -1,4 +1,8 @@
-import { createFileRoute, getRouteApi } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  getRouteApi,
+  useNavigate,
+} from '@tanstack/react-router'
 import {
   ArrowDown,
   AtSign,
@@ -37,7 +41,10 @@ import { useChannelMessages, channelMessagesKey } from '#/hooks/use-message'
 import { useChannelSocket } from '#/hooks/use-socket'
 
 import { parentRoute } from '#/routes/workspace/route'
-import type { CallSignalEvent } from '#/lib/types/socket.types'
+import type {
+  CallIncomingEvent,
+  CallSignalEvent,
+} from '#/lib/types/socket.types'
 import { cn, uniqueId } from '#/lib/utils'
 import type {
   Message,
@@ -472,7 +479,7 @@ function IncomingCallBanner({
 // ── RouteComponent ────────────────────────────────────────────────────────────
 
 function RouteComponent() {
-  const { id } = Route.useParams()
+  const { id, slug } = Route.useParams()
   const signalRef = useRef<((msg: CallSignalEvent) => void) | null>(null)
   const { workspace } = routeApi.useLoaderData()
   const { user } = parentRoute.useLoaderData()
@@ -568,11 +575,34 @@ function RouteComponent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length])
 
-  // ── socket ──────────────────────────────────────────────────────────────────
+  const [incoming, setIncoming] = useState<CallIncomingEvent | null>(null)
+
+  const handleCallSignal = useCallback(
+    (msg: CallSignalEvent) => {
+      if (msg.msg_type === 'call.incoming' && msg.user_id !== user.id)
+        setIncoming(msg)
+      if (msg.msg_type === 'call.ended') setIncoming(null)
+    },
+    [user.id],
+  )
+
+  const openHuddle = useCallback(
+    (mode: 'start' | 'join', callId?: string) => {
+      const qs = new URLSearchParams({ mode })
+      if (callId) qs.set('callId', callId)
+      window.open(
+        `/workspace/${slug}/channel/${id}/huddle?${qs}`,
+        `huddle-${id}`, // same name: reuses the window instead of opening duplicates
+        'popup=yes,width=1100,height=720',
+      )
+    },
+    [slug, id],
+  )
+
   const { send } = useChannelSocket(id, workspaceId, {
     onTyping: addTyping,
     onTypingStop: removeTyping,
-    onSignal: (msg) => signalRef.current?.(msg),
+    onSignal: handleCallSignal,
   })
 
   // ── typing debounce — only fire typing.start once per 2s ────────────────────
@@ -653,6 +683,13 @@ function RouteComponent() {
 
   const call = useCall({ channelId: id, userId: user.id, send })
   signalRef.current = call.handleSignal
+
+  useEffect(() => {
+    if (!call.callId) return
+
+    window.open(`/workspace/${slug}/channel/${id}/huddle`, '_blank')
+  }, [call.callId, id, slug])
+
   // ── render ───────────────────────────────────────────────────────────────────
   return (
     <TooltipProvider delay={200}>
@@ -676,14 +713,15 @@ function RouteComponent() {
                 render={
                   <button
                     type="button"
-                    onClick={() => call.start()}
+                    // onClick={() => call.start()}
+                    onClick={() => openHuddle('start')}
                     className="flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-[#B8B4AC] transition-colors hover:bg-[#2A2A3A] hover:text-[#F5F0E8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8A838]/60"
-                  />
+                  >
+                    <Video className="h-4 w-4" />
+                    Call
+                  </button>
                 }
-              >
-                <Video className="h-4 w-4" />
-                Call
-              </TooltipTrigger>
+              />
               <TooltipContent
                 side="bottom"
                 className="border-[#2A2A3A] bg-[#1C1C28] text-[11px] text-[#F5F0E8]"
@@ -708,9 +746,12 @@ function RouteComponent() {
 
         {call.incomingCall && (
           <IncomingCallBanner
-            onJoin={call.join}
-            onDismiss={call.dismiss}
-            callerName={callNameFor(call.incomingCall.user_id)}
+            callerName={callNameFor(incoming?.user_id ?? '')}
+            onJoin={() => {
+              openHuddle('join', incoming?.call_id)
+              setIncoming(null)
+            }}
+            onDismiss={() => setIncoming(null)}
           />
         )}
         {call.mediaError && (

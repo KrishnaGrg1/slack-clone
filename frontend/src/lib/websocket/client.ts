@@ -17,6 +17,7 @@ export class ChatSocket {
   private reconnectAttempts = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private generation = 0
+  private outboundQueue: ClientEvent[] = []
 
   constructor(
     private readonly channelID: string,
@@ -57,6 +58,7 @@ export class ChatSocket {
     socket.onopen = () => {
       this.reconnectAttempts = 0
       this.emitStatus('open')
+      this.flushQueue()
     }
 
     socket.onmessage = (e) => this.handleMessage(String(e.data))
@@ -104,12 +106,26 @@ export class ChatSocket {
     for (const listener of this.statusListeners) listener(status)
   }
 
+  private flushQueue() {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
+
+    while (this.outboundQueue.length > 0) {
+      const event = this.outboundQueue.shift()
+      if (!event) continue
+      this.socket.send(JSON.stringify(event))
+    }
+  }
+
   send(event: ClientEvent) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.warn('[ws] not connected, dropping', event.msg_type)
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(event))
       return
     }
-    this.socket.send(JSON.stringify(event))
+
+    this.outboundQueue.push(event)
+    if (!this.socket) {
+      void this.connect()
+    }
   }
 
   subscribe(listener: Listener) {
