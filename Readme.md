@@ -32,4 +32,4 @@ Thread: "Should we use Redis or Postgres for sessions?"
 ![Alt text](public/workspace.PNG)
 
 ### Call
-![Alt text](public/call.PNG)
+![Alt text](public/call.png)
