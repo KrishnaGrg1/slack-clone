@@ -50,6 +50,12 @@ export class PeerManager {
   // the joiner calls this for each person already in the call
   async callPeer(userId: string) {
     const pc = this.get(userId)
+    if (
+      pc.localDescription?.type === 'offer' ||
+      pc.signalingState !== 'stable'
+    ) {
+      return
+    }
     await pc.setLocalDescription(await pc.createOffer())
     this.send({
       msg_type: 'rtc.offer',
@@ -61,6 +67,12 @@ export class PeerManager {
 
   async onOffer(from: string, sdp: string) {
     const pc = this.get(from)
+    if (
+      pc.remoteDescription?.type === 'offer' &&
+      pc.remoteDescription.sdp === sdp
+    ) {
+      return
+    }
     await pc.setRemoteDescription({ type: 'offer', sdp })
     await this.flushIce(from, pc)
     await pc.setLocalDescription(await pc.createAnswer())
@@ -75,6 +87,12 @@ export class PeerManager {
   async onAnswer(from: string, sdp: string) {
     const pc = this.peers.get(from)
     if (!pc) return
+    if (
+      pc.remoteDescription?.type === 'answer' &&
+      pc.remoteDescription.sdp === sdp
+    ) {
+      return
+    }
     await pc.setRemoteDescription({ type: 'answer', sdp })
     await this.flushIce(from, pc)
   }
@@ -95,6 +113,10 @@ export class PeerManager {
   private async flushIce(from: string, pc: RTCPeerConnection) {
     for (const c of this.pendingIce.get(from) ?? []) await pc.addIceCandidate(c)
     this.pendingIce.delete(from)
+  }
+
+  values() {
+    return this.peers.values()
   }
 
   removePeer(userId: string) {

@@ -56,6 +56,14 @@ export type CallEndedEvent = {
   call_id: string
 }
 
+export type CallSummaryReadyEvent = {
+  msg_type: 'call.summary_ready'
+  call_id: string
+  channel_id: string
+  summary: string
+  transcript?: string
+}
+
 // rtc.* events are forwarded by the server as SignalMsg.
 // The server sets from_user_id from the authenticated connection.
 export type RTCOfferRelayEvent = {
@@ -93,6 +101,7 @@ export type ServerEvent =
   | CallPeerJoinedEvent
   | CallPeerLeftEvent
   | CallEndedEvent
+  | CallSummaryReadyEvent
   | RTCOfferRelayEvent
   | RTCAnswerRelayEvent
   | RTCIceRelayEvent
@@ -106,6 +115,7 @@ export type CallSignalEvent =
   | CallPeerJoinedEvent
   | CallPeerLeftEvent
   | CallEndedEvent
+  | CallSummaryReadyEvent
   | RTCOfferRelayEvent
   | RTCAnswerRelayEvent
   | RTCIceRelayEvent

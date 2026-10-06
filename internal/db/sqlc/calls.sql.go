@@ -11,14 +11,82 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addCallParticipant = `-- name: AddCallParticipant :exec
+INSERT INTO call_participants (call_id, user_id)
+VALUES ($1, $2)
+ON CONFLICT (call_id, user_id) DO UPDATE SET left_at = NULL
+`
+
+type AddCallParticipantParams struct {
+	CallID pgtype.UUID `json:"call_id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) AddCallParticipant(ctx context.Context, arg AddCallParticipantParams) error {
+	_, err := q.db.Exec(ctx, addCallParticipant, arg.CallID, arg.UserID)
+	return err
+}
+
+const canUploadRecording = `-- name: CanUploadRecording :one
+SELECT EXISTS (
+    SELECT 1
+    FROM calls c
+    JOIN call_participants p ON p.call_id = c.id
+    WHERE c.id = $1 AND c.channel_id = $2 AND p.user_id = $3
+)
+`
+
+type CanUploadRecordingParams struct {
+	ID        pgtype.UUID `json:"id"`
+	ChannelID pgtype.UUID `json:"channel_id"`
+	UserID    pgtype.UUID `json:"user_id"`
+}
+
+// the caller must have been in this call, and it must belong to this channel
+func (q *Queries) CanUploadRecording(ctx context.Context, arg CanUploadRecordingParams) (bool, error) {
+	row := q.db.QueryRow(ctx, canUploadRecording, arg.ID, arg.ChannelID, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const closeStaleCalls = `-- name: CloseStaleCalls :exec
+UPDATE calls
+SET status = 'ended', ended_at = NOW(),
+    duration_sec = EXTRACT(EPOCH FROM (NOW() - started_at))::int
+WHERE status = 'active'
+`
+
+func (q *Queries) CloseStaleCalls(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, closeStaleCalls)
+	return err
+}
+
+const closeStaleParticipants = `-- name: CloseStaleParticipants :exec
+UPDATE call_participants SET left_at = NOW()
+WHERE left_at IS NULL
+  AND call_id IN (SELECT id FROM calls WHERE status = 'active')
+`
+
+func (q *Queries) CloseStaleParticipants(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, closeStaleParticipants)
+	return err
+}
+
 const createCall = `-- name: CreateCall :one
-INSERT INTO calls(channel_id)
-VALUES ($1)
+INSERT INTO calls (id, channel_id, started_by)
+VALUES ($1, $2, $3)
 RETURNING id, channel_id, dm_id, thread_msg_id, started_by, status, started_at, ended_at, duration_sec
 `
 
-func (q *Queries) CreateCall(ctx context.Context, channelID pgtype.UUID) (Call, error) {
-	row := q.db.QueryRow(ctx, createCall, channelID)
+type CreateCallParams struct {
+	ID        pgtype.UUID `json:"id"`
+	ChannelID pgtype.UUID `json:"channel_id"`
+	StartedBy pgtype.UUID `json:"started_by"`
+}
+
+func (q *Queries) CreateCall(ctx context.Context, arg CreateCallParams) (Call, error) {
+	row := q.db.QueryRow(ctx, createCall, arg.ID, arg.ChannelID, arg.StartedBy)
 	var i Call
 	err := row.Scan(
 		&i.ID,
@@ -81,4 +149,66 @@ func (q *Queries) CreateCallSummaries(ctx context.Context, arg CreateCallSummari
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const endCall = `-- name: EndCall :exec
+UPDATE calls
+SET status       = 'ended',
+    ended_at     = NOW(),
+    duration_sec = EXTRACT(EPOCH FROM (NOW() - started_at))::int
+WHERE id = $1 AND status = 'active'
+`
+
+func (q *Queries) EndCall(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, endCall, id)
+	return err
+}
+
+const getCallByID = `-- name: GetCallByID :one
+SELECT
+	id,
+	channel_id,
+	dm_id,
+	thread_msg_id,
+	started_by,
+	status,
+	started_at,
+	ended_at,
+	duration_sec
+FROM calls
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetCallByID(ctx context.Context, id pgtype.UUID) (Call, error) {
+	row := q.db.QueryRow(ctx, getCallByID, id)
+	var i Call
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelID,
+		&i.DmID,
+		&i.ThreadMsgID,
+		&i.StartedBy,
+		&i.Status,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.DurationSec,
+	)
+	return i, err
+}
+
+const markCallParticipantLeft = `-- name: MarkCallParticipantLeft :exec
+UPDATE call_participants
+SET left_at = NOW()
+WHERE call_id = $1 AND user_id = $2 AND left_at IS NULL
+`
+
+type MarkCallParticipantLeftParams struct {
+	CallID pgtype.UUID `json:"call_id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) MarkCallParticipantLeft(ctx context.Context, arg MarkCallParticipantLeftParams) error {
+	_, err := q.db.Exec(ctx, markCallParticipantLeft, arg.CallID, arg.UserID)
+	return err
 }

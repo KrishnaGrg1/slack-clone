@@ -9,6 +9,7 @@ import (
 	"github.com/KrishnaGrg1/slack-clone/internal/call"
 	"github.com/KrishnaGrg1/slack-clone/internal/db"
 	"github.com/KrishnaGrg1/slack-clone/internal/dsa"
+	"github.com/KrishnaGrg1/slack-clone/internal/store"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -41,12 +42,13 @@ type Hub struct {
 	writer *db.DBWriter // ← add
 
 	callManager *call.CallManager
+	persister   Persister
 
 	// historyMu guards the history map (read in GetHistory, written in Run).
 	historyMu sync.RWMutex
 }
 
-func NewHub(rdb *redis.Client, writer *db.DBWriter) *Hub {
+func NewHub(rdb *redis.Client, writer *db.DBWriter, store *store.Store) *Hub {
 
 	return &Hub{
 		rooms:       make(map[string]map[*Client]bool),
@@ -59,6 +61,7 @@ func NewHub(rdb *redis.Client, writer *db.DBWriter) *Hub {
 		redis:       rdb,
 		writer:      writer,
 		callManager: call.NewCallManager(),
+		persister:   NewpgPersister(store),
 	}
 }
 func (h *Hub) Run() {

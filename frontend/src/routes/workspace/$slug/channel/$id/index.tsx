@@ -683,7 +683,6 @@ function RouteComponent() {
 
   const call = useCall({ channelId: id, userId: user.id, send })
   signalRef.current = call.handleSignal
-
   useEffect(() => {
     if (!call.callId) return
 
@@ -705,6 +704,14 @@ function RouteComponent() {
             <p className="truncate text-xs text-[#7A7890]">
               {workspace.data.workspace.name}
             </p>
+            {call.summary && (
+              <div className="border-b border-[#2F2A16] bg-[#E8A838]/10 px-5 py-3 text-xs text-[#F4D58B]">
+                <p className="font-medium text-[#F8E7B5]">Call summary ready</p>
+                <p className="mt-1 whitespace-pre-wrap text-[#F4D58B]/90">
+                  {call.summary}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -744,7 +751,7 @@ function RouteComponent() {
           </div>
         </header>
 
-        {call.incomingCall && (
+        {incoming && (
           <IncomingCallBanner
             callerName={callNameFor(incoming?.user_id ?? '')}
             onJoin={() => {

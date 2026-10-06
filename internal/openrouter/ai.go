@@ -75,8 +75,9 @@ func (ors *OpenRouterService) TranscribeAudio(ctx context.Context, audioPath str
 	res, err := ors.openRouter.STT.CreateTranscription(ctx, components.STTRequest{
 		Model: ors.sptmodel,
 		InputAudio: components.STTInputAudio{
-			Data:   base64.StdEncoding.EncodeToString(audioBytes),
-			Format: ".webm",
+			Data: base64.StdEncoding.EncodeToString(audioBytes),
+			// Format: ".webm",
+			Format: "wav",
 		},
 	})
 	if err != nil {

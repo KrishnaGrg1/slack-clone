@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/KrishnaGrg1/slack-clone/internal/middleware"
 	"github.com/KrishnaGrg1/slack-clone/internal/openrouter"
 	"github.com/KrishnaGrg1/slack-clone/internal/queue"
 	"github.com/KrishnaGrg1/slack-clone/internal/response"
@@ -37,7 +38,11 @@ func NewCallHandler(store *store.Store, ors *openrouter.OpenRouterService, stora
 // queue to summarize it
 
 func (c *CallHandler) UploadRecording(w http.ResponseWriter, r *http.Request) {
-	callID := chi.URLParam(r, "id")
+	senderID, _, ok := middleware.GetUserDetails(r)
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "AUTH_001", "authentication required", "user not found in request context")
+		return
+	}
 
 	// limit upload
 	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
@@ -45,6 +50,14 @@ func (c *CallHandler) UploadRecording(w http.ResponseWriter, r *http.Request) {
 	// parseMultiform
 	if err := r.ParseMultipartForm(50 << 20); err != nil {
 		response.Error(w, http.StatusBadRequest, "file too large", "CALL_001", err.Error())
+		return
+	}
+
+	callID := chi.URLParam(r, "id")
+	channelID := r.FormValue("channel_id")
+	threadID := r.FormValue("thread_id")
+	if channelID == "" {
+		response.Error(w, http.StatusBadRequest, "CALL_000", "channel_id is required", "missing channel_id form field")
 		return
 	}
 
@@ -67,7 +80,7 @@ func (c *CallHandler) UploadRecording(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//object name
-	objectName := fmt.Sprintf("calls/%s/recoding%s", callID, ext)
+	objectName := fmt.Sprintf("calls/%s/recording%s", callID, ext)
 
 	err = c.storage.UploadAudioStream(r.Context(), objectName, file, fileHeader.Size, contentType)
 	if err != nil {
@@ -76,6 +89,9 @@ func (c *CallHandler) UploadRecording(w http.ResponseWriter, r *http.Request) {
 	}
 	task, err := queue.NewProcessRecordingTask(queue.RecordingPayload{
 		CallID:     callID,
+		ChannelID:  channelID,
+		ThreadID:   threadID,
+		SenderID:   senderID,
 		ObjectName: objectName,
 	})
 	if err != nil {

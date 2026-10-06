@@ -15,8 +15,9 @@ import (
 
 // func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub, ors *openrouter.OpenRouterService, storage *storage.StorageService, queue *queue.Queue) http.Handler {
 
-func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler {
+func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub, callHandler *handler.CallHandler) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.CORS(cfg.FRONTEND_URL))
 	r.Use(Logger)
 
 	authHandler := handler.NewAuthHandler(store, cfg.JWT_SECRET)
@@ -24,11 +25,11 @@ func NewRouter(cfg *config.Config, store *store.Store, h *hub.Hub) http.Handler 
 	userHandler := handler.NewUserHandler(store)
 	msgHandler := handler.NewMessageHandler(store, h)
 	workspaceHandler := handler.NewWorkspaceHandler(store, cfg.FRONTEND_URL)
-	// callHandler := handler.NewCallHandler(store, ors, storage, queue)
+	// call recordings are handled through the workspace routes.
 
 	r.Route("/api/v1", func(r chi.Router) {
 		registerPublicRoutes(r, authHandler)
-		registerProtectedRoutes(r, cfg.JWT_SECRET, store, h, userHandler, workspaceHandler, channelHandler, msgHandler)
+		registerProtectedRoutes(r, cfg.JWT_SECRET, store, h, userHandler, workspaceHandler, channelHandler, msgHandler, callHandler)
 	})
 
 	return r
@@ -54,6 +55,7 @@ func registerProtectedRoutes(
 	workspaceHandler *handler.WorkspaceHandler,
 	channelHandler *handler.ChannelHandler,
 	msgHandler *handler.MessageHandler,
+	callHandler *handler.CallHandler,
 ) {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(jwtSecret))
@@ -63,7 +65,7 @@ func registerProtectedRoutes(
 		})
 
 		r.Get("/user/me", userHandler.GetMe)
-
+		r.Post("/calls/{id}/recording", callHandler.UploadRecording)
 		r.Route("/workspaces", func(r chi.Router) {
 			r.Get("/search", workspaceHandler.SearchWorkspace)
 			r.Post("/", workspaceHandler.CreateWorkspace)
@@ -80,7 +82,7 @@ func registerProtectedRoutes(
 
 				r.Group(func(r chi.Router) {
 					r.Use(middleware.WorkspaceAuth(store.Queries))
-					registerWorkspaceRoutes(r, channelHandler, msgHandler)
+					registerWorkspaceRoutes(r, channelHandler, msgHandler, callHandler)
 				})
 			})
 		})
@@ -90,6 +92,7 @@ func registerWorkspaceRoutes(
 	r chi.Router,
 	channelHandler *handler.ChannelHandler,
 	msgHandler *handler.MessageHandler,
+	callHandler *handler.CallHandler,
 ) {
 	r.Get("/channels", channelHandler.GetChannels)
 	r.Post("/channels", channelHandler.CreateChannel)

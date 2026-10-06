@@ -146,6 +146,14 @@ func (c *Client) readPump() {
 			// leave call
 			c.handleCallLeave(msg)
 
+			// {"msg_type":"call.ended","call_id":"57534f09-0265-475d-8356-6f1489a43600","user_id":"085f1031-9c0f-46e4-affa-01f8727688f4"}
+		// call ended
+		case TypeCallEnded:
+			var msg InboundCallMsg
+			if err := json.Unmarshal(data, &msg); err != nil {
+				continue
+			}
+
 		//-webrtc signaling-
 		case TypeRTCOffer, TypeRTCIce, TypeRTCAnswer:
 			var sig SignalMsg
@@ -247,8 +255,18 @@ func ServeWs(hub *Hub, store *store.Store, w http.ResponseWriter, r *http.Reques
 // handleCallStart creates a new call room and notifies channel members
 func (c *Client) handleCallStart(msg InboundCallMsg) {
 	call, existing, isCreated := c.hub.callManager.StartCall(c.senderID, c.senderName, c.channelID)
-
+	ctx, cancel := dbCtx()
+	defer cancel()
 	if isCreated {
+		if err := c.hub.persister.Started(
+			ctx,
+			call.ID,
+			c.channelID,
+			c.senderID,
+		); err != nil {
+			logErr("started", err)
+			return
+		}
 		// tell initiator: here is your call ID
 		event := OutboundCallEvent{
 			Type:      TypeCallStarted,
@@ -271,6 +289,14 @@ func (c *Client) handleCallStart(msg InboundCallMsg) {
 		inPayload, _ := json.Marshal(incoming)
 		c.hub.NotifyRoom(c.channelID, inPayload)
 	} else {
+		if err := c.hub.persister.Joined(
+			ctx,
+			call.ID,
+			c.senderID,
+		); err != nil {
+			logErr("joined", err)
+		}
+
 		c.sendExistingPeers(call.ID, existing)
 		perrJoined, _ := json.Marshal(OutboundCallEvent{
 			Type:   TypeCallPeerJoined,
@@ -316,7 +342,18 @@ func (c *Client) handleCallLeave(msg InboundCallMsg) {
 		log.Printf("failed to leave call user=%s callID=%s", c.senderID, msg.CallID)
 		return
 	}
+	// Persist participant leaving / call ending.
+	ctx, cancel := dbCtx()
+	defer cancel()
 
+	if err := c.hub.persister.Left(
+		ctx,
+		msg.CallID,
+		c.senderID,
+		departure.Ended,
+	); err != nil {
+		logErr("left", err)
+	}
 	event := OutboundCallEvent{
 		Type:   TypeCallPeerLeft,
 		CallID: msg.CallID,
@@ -328,6 +365,7 @@ func (c *Client) handleCallLeave(msg InboundCallMsg) {
 	payload, _ := json.Marshal(event)
 
 	if departure.Ended {
+
 		// nobody is left in the call, so tell the whole channel to clear the banner
 		c.hub.NotifyRoom(departure.ChannelID, payload)
 	} else {

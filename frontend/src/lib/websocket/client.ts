@@ -90,17 +90,31 @@ export class ChatSocket {
     }, delay)
   }
 
-  private handleMessage(raw: string) {
-    for (const chunk of raw.split('\n')) {
-      if (!chunk.trim()) continue
-      try {
-        const event = JSON.parse(chunk) as ServerEvent
-        for (const listener of this.listeners) listener(event)
-      } catch (e) {
-        console.error('[ws] invalid message', e)
+private handleMessage(raw: string) {
+  console.log('socket data', raw)
+  console.log('[ws] listener count:', this.listeners.size)
+
+  for (const chunk of raw.split('\n')) {
+    if (!chunk.trim()) continue
+
+    try {
+      const event = JSON.parse(chunk) as ServerEvent
+
+      console.log(
+        '[ws] dispatching:',
+        event.msg_type,
+        'listeners:',
+        this.listeners.size,
+      )
+
+      for (const listener of this.listeners) {
+        listener(event)
       }
+    } catch (e) {
+      console.error('[ws] invalid message', e)
     }
   }
+}
 
   private emitStatus(status: SocketStatus) {
     for (const listener of this.statusListeners) listener(status)
@@ -128,10 +142,21 @@ export class ChatSocket {
     }
   }
 
-  subscribe(listener: Listener) {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+subscribe(listener: Listener) {
+  console.log('[ws] SUBSCRIBE. listeners before:', this.listeners.size)
+
+  this.listeners.add(listener)
+
+  console.log('[ws] SUBSCRIBE. listeners after:', this.listeners.size)
+
+  return () => {
+    console.log('[ws] UNSUBSCRIBE. listeners before:', this.listeners.size)
+
+    this.listeners.delete(listener)
+
+    console.log('[ws] UNSUBSCRIBE. listeners after:', this.listeners.size)
   }
+}
 
   subscribeStatus(listener: StatusListener) {
     this.statusListeners.add(listener)

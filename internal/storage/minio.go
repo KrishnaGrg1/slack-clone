@@ -21,13 +21,14 @@ type StorageService struct {
 func NewMinIOStorage() (*StorageService, error) {
 	endpoint := "localhost:9000"
 	accessKeyID := "minioadmin"
-	secretAccessKey := "minioadminpassword"
+	secretAccessKey := "minioadmin"
 	useSSL := false // Set false for local HTTP testing
 
 	// Initialize MinIO client
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,
+		Region: "us-east-1",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to init minio: %w", err)
@@ -55,7 +56,7 @@ func NewMinIOStorage() (*StorageService, error) {
 // Uploads a local file to MinIO
 func (s *StorageService) UploadAudioStream(ctx context.Context, objectName string, reader io.Reader, size int64, contentType string) error {
 	if contentType == "" {
-		contentType = "audio/webm"
+		contentType = "audio/wav"
 	}
 
 	info, err := s.client.PutObject(ctx, s.bucketName, objectName, reader, size, minio.PutObjectOptions{

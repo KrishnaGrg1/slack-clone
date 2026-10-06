@@ -3,5 +3,7 @@
 # OS files
 .DS_Store
 
+data
+data/*
 
 thread_call

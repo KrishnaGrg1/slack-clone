@@ -11,8 +11,13 @@ import (
 )
 
 type Querier interface {
+	AddCallParticipant(ctx context.Context, arg AddCallParticipantParams) error
 	AddWorkspaceMember(ctx context.Context, arg AddWorkspaceMemberParams) error
-	CreateCall(ctx context.Context, channelID pgtype.UUID) (Call, error)
+	// the caller must have been in this call, and it must belong to this channel
+	CanUploadRecording(ctx context.Context, arg CanUploadRecordingParams) (bool, error)
+	CloseStaleCalls(ctx context.Context) error
+	CloseStaleParticipants(ctx context.Context) error
+	CreateCall(ctx context.Context, arg CreateCallParams) (Call, error)
 	CreateCallParticipants(ctx context.Context, arg CreateCallParticipantsParams) (CallParticipant, error)
 	CreateCallSummaries(ctx context.Context, arg CreateCallSummariesParams) (CallSummary, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (Channel, error)
@@ -23,7 +28,9 @@ type Querier interface {
 	DeleteWorkspace(ctx context.Context, arg DeleteWorkspaceParams) error
 	EditMessage(ctx context.Context, arg EditMessageParams) (Message, error)
 	EditWorkspace(ctx context.Context, arg EditWorkspaceParams) (Workspace, error)
+	EndCall(ctx context.Context, id pgtype.UUID) error
 	GenerateWorkspaceInvite(ctx context.Context, arg GenerateWorkspaceInviteParams) (GenerateWorkspaceInviteRow, error)
+	GetCallByID(ctx context.Context, id pgtype.UUID) (Call, error)
 	GetChannelById(ctx context.Context, id pgtype.UUID) (Channel, error)
 	GetChannelMembers(ctx context.Context, channelID pgtype.UUID) ([]GetChannelMembersRow, error)
 	GetChannelMessages(ctx context.Context, arg GetChannelMessagesParams) ([]GetChannelMessagesRow, error)
@@ -42,6 +49,7 @@ type Querier interface {
 	IsWorkspaceMember(ctx context.Context, arg IsWorkspaceMemberParams) (bool, error)
 	JoinChannel(ctx context.Context, arg JoinChannelParams) error
 	LeaveChannel(ctx context.Context, arg LeaveChannelParams) error
+	MarkCallParticipantLeft(ctx context.Context, arg MarkCallParticipantLeftParams) error
 	SearchWorkspaces(ctx context.Context, arg SearchWorkspacesParams) ([]Workspace, error)
 }
 

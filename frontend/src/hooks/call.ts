@@ -10,7 +10,8 @@ import type {
   CallSignalEvent,
   ClientEvent,
 } from '#/lib/types/socket.types'
-import { uploadCallRecording } from '#/lib/services/call.service.ts'
+import axiosInstance from '#/lib/axios'
+import { getWsToken } from '#/lib/services/ws-token'
 
 export function useCall({
   channelId,
@@ -35,10 +36,6 @@ export function useCall({
   const [remotes, setRemotes] = useState<Record<string, MediaStream>>({})
   const [summary, setSummary] = useState<string | null>(null)
   const [recordingFinalized, setRecordingFinalized] = useState(false)
-  // true while the recording is being uploaded; true once everything is done
-  const [saving, setSaving] = useState(false)
-  const [finished, setFinished] = useState(false)
-  const finishingRef = useRef<Promise<void> | null>(null)
 
   // share screen
   const screenRef = useRef<MediaStream | null>(null)
@@ -55,6 +52,7 @@ export function useCall({
     channelId: string
   } | null>(null)
   const shouldUploadRecordingRef = useRef(false)
+  const uploadingRecordingRef = useRef(false)
 
   const recordingUploadPromiseRef = useRef<Promise<void> | null>(null)
   // ── media ───────────────────────────────────────────────────────────────────
@@ -110,48 +108,33 @@ export function useCall({
     setRemotes({})
   }, [])
 
-  // keeps the recording until the upload succeeded, so "Retry" works
-  const pendingBlobRef = useRef<{ blob: Blob; callId: string } | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-
-  const doUpload = useCallback(
-    async (blob: Blob, callId: string): Promise<boolean> => {
-      setUploadError(null)
-      try {
-        await uploadCallRecording({ callId, channelId, blob })
-        pendingBlobRef.current = null
-        console.log('[recording] upload OK')
-        return true
-      } catch (error) {
-        console.error('[recording] upload failed', error)
-        pendingBlobRef.current = { blob, callId }
-        setUploadError(
-          error instanceof Error ? error.message : 'Upload failed',
-        )
-        return false
-      }
-    },
-    [channelId],
-  )
-
-  const uploadRecording = useCallback(
-    async (blob: Blob) => {
-      const meta = recordingMetaRef.current
+  const uploadRecording = useCallback(async (blob: Blob) => {
+    const meta = recordingMetaRef.current
+    if (!meta || uploadingRecordingRef.current) return
+    console.log('starting upload')
+    uploadingRecordingRef.current = true
+    try {
+      const formData = new FormData()
+      formData.append('audio', blob, `${meta.callId}.webm`)
+      formData.append('channel_id', meta.channelId)
+      const token = await getWsToken()
+      const data = await axiosInstance.post(
+        `/calls/${meta.callId}/recording`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+      console.log('upload finihed', data)
+    } catch (error) {
+      console.error('[call] recording upload failed', error)
+    } finally {
+      uploadingRecordingRef.current = false
       recordingMetaRef.current = null
-      if (!meta) return
-      await doUpload(blob, meta.callId)
-    },
-    [doUpload],
-  )
-
-  const retryUpload = useCallback(async () => {
-    const p = pendingBlobRef.current
-    if (!p) return
-    setSaving(true)
-    const ok = await doUpload(p.blob, p.callId)
-    setSaving(false)
-    if (ok) setFinished(true)
-  }, [doUpload])
+    }
+  }, [])
 
   const startRecording = useCallback(
     (callId: string) => {
@@ -276,32 +259,6 @@ export function useCall({
     setRecordingFinalized(true)
   }, [])
 
-  // ONE way to end a call, used by both Leave and call.ended.
-  // Safe to call many times (the server sends call.ended several times):
-  // every caller gets the same promise, so nothing runs twice and nothing
-  // closes the window before the upload is done.
-  const finishCall = useCallback(() => {
-    if (finishingRef.current) return finishingRef.current
-    setSaving(true)
-    finishingRef.current = (async () => {
-      try {
-        await stopRecording() // stop recorder -> wait for upload
-      } catch (err) {
-        console.error('[call] finishing recording failed', err)
-      } finally {
-        closePeers()
-        setCallId(null)
-        setPeers([])
-        setIncomingCall(null)
-        stopMedia()
-        setSaving(false)
-        // close only when nothing is waiting to be uploaded
-        if (!pendingBlobRef.current) setFinished(true)
-      }
-    })()
-    return finishingRef.current
-  }, [stopRecording, closePeers, stopMedia])
-
   // ── every call.* and rtc.* message from the server lands here ───────────────
   const handleSignal = useCallback(
     async (msg: CallSignalEvent) => {
@@ -350,10 +307,21 @@ export function useCall({
           })
           break
 
-        case 'call.ended':
-          console.log('[call] call ended, finishing')
-          await finishCall()
+        case 'call.ended': {
+          console.log('[call] call ended, finalizing recording')
+
+          await stopRecording()
+
+          console.log('[call] recording finalized')
+
+          closePeers()
+          setCallId(null)
+          setPeers([])
+          setIncomingCall(null)
+          stopMedia()
+
           break
+        }
 
         case 'call.summary_ready':
           setSummary(msg.summary)
@@ -374,15 +342,13 @@ export function useCall({
           break
       }
     },
-    [userId, ensurePM, startRecording, finishCall],
+    [userId, ensurePM, closePeers, stopMedia, startRecording, stopRecording],
   )
 
   // ── actions ─────────────────────────────────────────────────────────────────
   // RULE: get the camera/mic FIRST, then tell the server.
   const start = useCallback(async () => {
     shouldUploadRecordingRef.current = true
-    finishingRef.current = null
-    setFinished(false)
     if (!(await getMedia())) return
     send({ msg_type: 'call.start', channel_id: channelId })
   }, [send, channelId, getMedia])
@@ -390,8 +356,6 @@ export function useCall({
   const join = useCallback(
     async (id?: string) => {
       shouldUploadRecordingRef.current = false
-      finishingRef.current = null
-      setFinished(false)
       const target = typeof id === 'string' ? id : incomingCall?.call_id
       if (!target) return
       if (!(await getMedia())) return
@@ -404,8 +368,12 @@ export function useCall({
     if (callId) {
       send({ msg_type: 'call.leave', channel_id: channelId, call_id: callId })
     }
-    void finishCall()
-  }, [send, channelId, callId, finishCall])
+    stopRecording()
+    closePeers()
+    setCallId(null)
+    setPeers([])
+    stopMedia()
+  }, [send, channelId, callId, stopMedia, closePeers, stopRecording])
 
   const dismiss = useCallback(() => setIncomingCall(null), [])
 
@@ -483,10 +451,6 @@ export function useCall({
     mediaError,
     summary,
     recordingFinalized,
-    saving,
-    finished,
-    uploadError,
-    retryUpload,
     sharing,
     startScreenShare,
     stopScreenShare,
