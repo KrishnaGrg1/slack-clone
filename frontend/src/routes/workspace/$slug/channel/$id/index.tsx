@@ -7,6 +7,9 @@ import {
   ArrowDown,
   AtSign,
   Bold,
+  Bot,
+  CheckCheck,
+  ChevronDown,
   ChevronRight,
   Circle,
   Code,
@@ -52,6 +55,10 @@ import type {
 } from '#/lib/types/channel.type'
 import { useCall } from '#/hooks/use-call'
 import VideoTile from '#/components/call/VideoTile'
+import { Card } from '#/components/ui/card'
+import { Button } from '#/components/ui/button'
+import { Badge } from '#/components/ui/badge'
+import type { Call, CallSummary } from '#/lib/types/call.type'
 
 export const Route = createFileRoute('/workspace/$slug/channel/$id/')({
   component: RouteComponent,
@@ -285,7 +292,9 @@ function MessageBubble({
       </div>
     )
   }
-
+  if (msg.msg_type === 'call_summary') {
+    return <CallSummaryMessage msg={msg} />
+  }
   return (
     <div
       className={cn(
@@ -500,6 +509,7 @@ function RouteComponent() {
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     )
   }, [channelMessages])
+  console.log('message', messages)
 
   const memberNameMap = useMemo(
     () =>
@@ -704,14 +714,14 @@ function RouteComponent() {
             <p className="truncate text-xs text-[#7A7890]">
               {workspace.data.workspace.name}
             </p>
-            {call.summary && (
+            {/* {call.summary && (
               <div className="border-b border-[#2F2A16] bg-[#E8A838]/10 px-5 py-3 text-xs text-[#F4D58B]">
                 <p className="font-medium text-[#F8E7B5]">Call summary ready</p>
                 <p className="mt-1 whitespace-pre-wrap text-[#F4D58B]/90">
                   {call.summary}
                 </p>
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="flex items-center gap-1">
@@ -950,5 +960,87 @@ function RouteComponent() {
         </div>
       </main>
     </TooltipProvider>
+  )
+}
+
+function SummaryBody({ text }: { text: string }) {
+  const lines = text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        const heading =
+          line.match(/^#{1,4}\s+(.+?):?$/) ?? line.match(/^\*\*(.+?)\*\*:?$/)
+        if (heading) {
+          return (
+            <p
+              key={i}
+              className="pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#4A4860] first:pt-0"
+            >
+              {heading[1]}
+            </p>
+          )
+        }
+        const bullet = line.match(/^[-*•]\s+(.+)$/)
+        if (bullet) {
+          return (
+            <div
+              key={i}
+              className="flex gap-2 text-[12px] leading-5 text-[#C8C4BE]"
+            >
+              <span className="shrink-0 text-[#E8A838]">▸</span>
+              <span>{renderContent(bullet[1])}</span>
+            </div>
+          )
+        }
+        return (
+          <p key={i} className="text-[12px] leading-5 text-[#C8C4BE]">
+            {renderContent(line)}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function CallSummaryMessage({ msg }: { msg: Message }) {
+  const [expanded, setExpanded] = useState(true)
+
+  return (
+    <Card className="mx-4 my-2 gap-0 rounded-xl border-[#E8A838]/20 bg-[#E8A838]/[0.04] p-0 shadow-none">
+      <div className="flex items-center gap-2.5 border-b border-[#E8A838]/10 px-3.5 py-2.5">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#E8A838]/15">
+          <Bot className="h-3.5 w-3.5 text-[#E8A838]" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-[#E8A838]">
+            AI call summary
+          </p>
+          <p className="text-[10px] text-[#7A7890]">
+            {formatTime(msg.created_at)}
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setExpanded((v) => !v)}
+          className="h-6 w-6 text-[#4A4860] hover:bg-transparent hover:text-[#7A7890]"
+        >
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
+      {expanded && (
+        <div className="p-3.5">
+          <SummaryBody text={msg.content} />
+        </div>
+      )}
+    </Card>
   )
 }

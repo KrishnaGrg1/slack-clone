@@ -60,6 +60,7 @@ export type CallSummaryReadyEvent = {
   msg_type: 'call.summary_ready'
   call_id: string
   channel_id: string
+  message_id: string
   summary: string
   transcript?: string
 }

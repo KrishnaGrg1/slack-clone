@@ -90,31 +90,31 @@ export class ChatSocket {
     }, delay)
   }
 
-private handleMessage(raw: string) {
-  console.log('socket data', raw)
-  console.log('[ws] listener count:', this.listeners.size)
+  private handleMessage(raw: string) {
+    console.log('socket data', raw)
+    console.log('[ws] listener count:', this.listeners.size)
 
-  for (const chunk of raw.split('\n')) {
-    if (!chunk.trim()) continue
+    for (const chunk of raw.split('\n')) {
+      if (!chunk.trim()) continue
 
-    try {
-      const event = JSON.parse(chunk) as ServerEvent
+      try {
+        const event = JSON.parse(chunk) as ServerEvent
 
-      console.log(
-        '[ws] dispatching:',
-        event.msg_type,
-        'listeners:',
-        this.listeners.size,
-      )
+        console.log(
+          '[ws] dispatching:',
+          event.msg_type,
+          'listeners:',
+          this.listeners.size,
+        )
 
-      for (const listener of this.listeners) {
-        listener(event)
+        for (const listener of this.listeners) {
+          listener(event)
+        }
+      } catch (e) {
+        console.error('[ws] invalid message', e)
       }
-    } catch (e) {
-      console.error('[ws] invalid message', e)
     }
   }
-}
 
   private emitStatus(status: SocketStatus) {
     for (const listener of this.statusListeners) listener(status)
@@ -142,21 +142,21 @@ private handleMessage(raw: string) {
     }
   }
 
-subscribe(listener: Listener) {
-  console.log('[ws] SUBSCRIBE. listeners before:', this.listeners.size)
+  subscribe(listener: Listener) {
+    console.log('[ws] SUBSCRIBE. listeners before:', this.listeners.size)
 
-  this.listeners.add(listener)
+    this.listeners.add(listener)
 
-  console.log('[ws] SUBSCRIBE. listeners after:', this.listeners.size)
+    console.log('[ws] SUBSCRIBE. listeners after:', this.listeners.size)
 
-  return () => {
-    console.log('[ws] UNSUBSCRIBE. listeners before:', this.listeners.size)
+    return () => {
+      console.log('[ws] UNSUBSCRIBE. listeners before:', this.listeners.size)
 
-    this.listeners.delete(listener)
+      this.listeners.delete(listener)
 
-    console.log('[ws] UNSUBSCRIBE. listeners after:', this.listeners.size)
+      console.log('[ws] UNSUBSCRIBE. listeners after:', this.listeners.size)
+    }
   }
-}
 
   subscribeStatus(listener: StatusListener) {
     this.statusListeners.add(listener)

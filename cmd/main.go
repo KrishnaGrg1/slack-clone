@@ -17,6 +17,7 @@ import (
 	"github.com/KrishnaGrg1/slack-clone/internal/redis"
 	"github.com/KrishnaGrg1/slack-clone/internal/storage"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
+	whisper "github.com/KrishnaGrg1/slack-clone/internal/whipser"
 )
 
 func main() {
@@ -50,7 +51,9 @@ func main() {
 	if err != nil {
 		log.Fatal("storage:", err)
 	}
-	recordingProcessor := ai.NewRecordingProcess(ors, st, s, h.NotifyRoom)
+
+	ts := whisper.NewTranscribeService(cfg.WHISPER_URL)
+	recordingProcessor := ai.NewRecordingProcess(ors, ts, st, s, h.NotifyRoom)
 	queueServer.Register(queue.TypeProcessRecording, recordingProcessor.ProcessTask)
 	go func() {
 		if err := queueServer.Start(); err != nil {

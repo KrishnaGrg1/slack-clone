@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	db "github.com/KrishnaGrg1/slack-clone/internal/db/sqlc"
 	"github.com/KrishnaGrg1/slack-clone/internal/openrouter"
@@ -13,12 +14,14 @@ import (
 	"github.com/KrishnaGrg1/slack-clone/internal/queue"
 	"github.com/KrishnaGrg1/slack-clone/internal/storage"
 	"github.com/KrishnaGrg1/slack-clone/internal/store"
+	whisper "github.com/KrishnaGrg1/slack-clone/internal/whipser"
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type RecordingProcess struct {
 	ors           *openrouter.OpenRouterService
+	ts            *whisper.TranscribeService
 	storage       *storage.StorageService
 	store         *store.Store
 	notifySummary func(channelID string, payload []byte)
@@ -26,12 +29,14 @@ type RecordingProcess struct {
 
 func NewRecordingProcess(
 	ors *openrouter.OpenRouterService,
+	ts *whisper.TranscribeService,
 	storage *storage.StorageService,
 	store *store.Store,
 	notifySummary func(channelID string, payload []byte),
 ) *RecordingProcess {
 	return &RecordingProcess{
 		ors:           ors,
+		ts:            ts,
 		storage:       storage,
 		store:         store,
 		notifySummary: notifySummary,
@@ -58,9 +63,13 @@ func (p *RecordingProcess) ProcessTask(ctx context.Context, t *asynq.Task) error
 			log.Printf("failed to remove temp recording %s: %v", tmpPath, removeErr)
 		}
 	}()
-
+	audio, err := os.Open(tmpPath)
+	if err != nil {
+		return fmt.Errorf("open audio: %w", err)
+	}
+	defer audio.Close()
 	// transcribe the audio
-	transcript, err := p.ors.TranscribeAudio(ctx, tmpPath)
+	transcript, err := p.ts.TranscribeAudio(ctx, audio, filepath.Base(tmpPath))
 	if err != nil {
 		return fmt.Errorf("transcribe: %w", err)
 	}
@@ -103,24 +112,29 @@ func (p *RecordingProcess) ProcessTask(ctx context.Context, t *asynq.Task) error
 		}
 	}
 
-	if _, err := p.store.Queries.CreateMessage(ctx, db.CreateMessageParams{
+	summaryMessage, err := p.store.Queries.CreateMessage(ctx, db.CreateMessageParams{
 		ChannelID: channelID,
 		SenderID:  senderID,
 		Content:   summary,
 		ThreadID:  threadID,
 		MsgType:   "call_summary",
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("persist summary message: %w", err)
 	}
 
 	if p.notifySummary != nil {
-		broadcast, _ := json.Marshal(map[string]any{
+		broadcast, err := json.Marshal(map[string]any{
 			"msg_type":   "call.summary_ready",
 			"call_id":    payload.CallID,
 			"channel_id": payload.ChannelID,
+			"message_id": summaryMessage.ID,
 			"summary":    summary,
 			"transcript": transcript,
 		})
+		if err != nil {
+			return fmt.Errorf("marshal summary event: %w", err)
+		}
 		p.notifySummary(payload.ChannelID, broadcast)
 	}
 	log.Printf("call %s summary ready", payload.CallID)

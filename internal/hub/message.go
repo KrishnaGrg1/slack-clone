@@ -71,3 +71,12 @@ type OutboundCallEvent struct {
 	UserID        string   `json:"user_id,omitempty"`
 	ExistingPeers []string `json:"existing_peers,omitempty"`
 }
+
+// type SummarizeReadyEvent struct {
+// 	Type       string `json:"msg_type"`
+// 	CallID     string `json:"call_id"`
+// 	ChannelID  string `json:"channel_id,omitempty"`
+// 	MessageID  string `json:"message_id,omitempty"`
+// 	Summary    string `json:"summary,omitempty"`
+// 	Transcript string `json:"transcript,omitempty"`
+// }

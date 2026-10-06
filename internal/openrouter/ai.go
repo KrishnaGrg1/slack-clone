@@ -2,10 +2,8 @@ package openrouter
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	openrouter "github.com/OpenRouterTeam/go-sdk"
 	"github.com/OpenRouterTeam/go-sdk/models/components"
@@ -66,25 +64,25 @@ func (ors *OpenRouterService) SummarizeHuddle(ctx context.Context, transcript st
 	return extractText(res.ChatResult.Choices[0].Message.Content)
 }
 
-func (ors *OpenRouterService) TranscribeAudio(ctx context.Context, audioPath string) (string, error) {
-	audioBytes, err := os.ReadFile(audioPath)
-	if err != nil {
-		return "", fmt.Errorf("read audio file: %w", err)
-	}
+// func (ors *OpenRouterService) TranscribeAudio(ctx context.Context, audioPath string) (string, error) {
+// 	audioBytes, err := os.ReadFile(audioPath)
+// 	if err != nil {
+// 		return "", fmt.Errorf("read audio file: %w", err)
+// 	}
 
-	res, err := ors.openRouter.STT.CreateTranscription(ctx, components.STTRequest{
-		Model: ors.sptmodel,
-		InputAudio: components.STTInputAudio{
-			Data: base64.StdEncoding.EncodeToString(audioBytes),
-			// Format: ".webm",
-			Format: "wav",
-		},
-	})
-	if err != nil {
-		return "", fmt.Errorf("transcription request: %w", err)
-	}
-	if res == nil {
-		return "", fmt.Errorf("empty transcription response")
-	}
-	return res.Text, nil
-}
+// 	res, err := ors.openRouter.STT.CreateTranscription(ctx, components.STTRequest{
+// 		Model: ors.sptmodel,
+// 		InputAudio: components.STTInputAudio{
+// 			Data: base64.StdEncoding.EncodeToString(audioBytes),
+// 			// Format: ".webm",
+// 			Format: "wav",
+// 		},
+// 	})
+// 	if err != nil {
+// 		return "", fmt.Errorf("transcription request: %w", err)
+// 	}
+// 	if res == nil {
+// 		return "", fmt.Errorf("empty transcription response")
+// 	}
+// 	return res.Text, nil
+// }

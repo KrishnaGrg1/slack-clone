@@ -125,9 +125,7 @@ export function useCall({
       } catch (error) {
         console.error('[recording] upload failed', error)
         pendingBlobRef.current = { blob, callId }
-        setUploadError(
-          error instanceof Error ? error.message : 'Upload failed',
-        )
+        setUploadError(error instanceof Error ? error.message : 'Upload failed')
         return false
       }
     },
@@ -305,7 +303,7 @@ export function useCall({
   // ── every call.* and rtc.* message from the server lands here ───────────────
   const handleSignal = useCallback(
     async (msg: CallSignalEvent) => {
-       console.log('[call] HANDLE SIGNAL:', msg.msg_type, msg)
+      console.log('[call] HANDLE SIGNAL:', msg.msg_type, msg)
       switch (msg.msg_type) {
         case 'call.incoming':
           console.log('msg userId', msg)

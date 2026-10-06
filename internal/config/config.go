@@ -15,6 +15,8 @@ type Config struct {
 	OPENROUTER_API_KEY string
 	OPENROUTER_MODEL   string
 
+	WHISPER_URL string
+
 	OPENROUTER_AUDIO_MODEL string
 	FRONTEND_URL           string
 }
@@ -30,6 +32,7 @@ func Load() *Config {
 		REDIS_URL:              getEnv("REDIS_URL", "redis://localhost:6379"),
 		OPENROUTER_API_KEY:     getEnv("OPENROUTER_API_KEY", ""),
 		OPENROUTER_MODEL:       getEnv("OPENROUTER_MODEL", ""),
+		WHISPER_URL:            getEnv("WHISPER_URL", "http://localhost:8080/inference"),
 		OPENROUTER_AUDIO_MODEL: getEnv("OPENROUTER_AUDIO_MODEL", ""),
 		FRONTEND_URL:           getEnv("FRONTEND_URL", ""),
 	}

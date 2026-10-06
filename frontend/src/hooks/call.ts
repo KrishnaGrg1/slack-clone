@@ -262,7 +262,7 @@ export function useCall({
   // ── every call.* and rtc.* message from the server lands here ───────────────
   const handleSignal = useCallback(
     async (msg: CallSignalEvent) => {
-       console.log('[call] HANDLE SIGNAL:', msg.msg_type, msg)
+      console.log('[call] HANDLE SIGNAL:', msg.msg_type, msg)
       switch (msg.msg_type) {
         case 'call.incoming':
           console.log('msg userId', msg)

@@ -123,6 +123,43 @@ export function useChannelSocket(
           break
         }
 
+        case 'call.summary_ready': {
+          cbs?.onSignal?.(event)
+          const key = channelMessagesKey(workspaceID, channelID)
+
+          const summaryMessage: Message = {
+            id: event.message_id,
+            channel_id: event.channel_id,
+            sender_id: '',
+            sender_username: 'AI Assistant',
+            sender_avatar: '',
+            content: event.summary,
+            thread_id: '',
+            msg_type: 'call_summary',
+            created_at: new Date().toISOString(),
+            edited_at: '',
+            reply_count: 0,
+          }
+
+          queryClient.setQueryData(
+            key,
+            (old: GetChannelMessageResponse | undefined) => {
+              if (!old) return old
+              const existing = old.data?.messages ?? []
+              // duplicate event, or a refetch already brought it in
+              if (existing.some((m) => m.id === summaryMessage.id)) return old
+              return {
+                ...old,
+                data: { messages: [...existing, summaryMessage] },
+              }
+            },
+          )
+          // The row is saved in Postgres before the event is sent, so refetch to
+          // pick up the server's real timestamp and sender.
+          void queryClient.invalidateQueries({ queryKey: key })
+          break
+        }
+
         case 'error': {
           console.error('[ws] server error:', event.message)
           break
