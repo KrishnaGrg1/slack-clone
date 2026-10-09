@@ -18,10 +18,10 @@ type StorageService struct {
 	bucketName string
 }
 
-func NewMinIOStorage() (*StorageService, error) {
-	endpoint := "localhost:9000"
-	accessKeyID := "minioadmin"
-	secretAccessKey := "minioadmin"
+func NewMinIOStorage(minioURl, minioAcessKey, minioSecretAccessKey string) (*StorageService, error) {
+	endpoint := minioURl
+	accessKeyID := minioAcessKey
+	secretAccessKey := minioSecretAccessKey
 	useSSL := false // Set false for local HTTP testing
 
 	// Initialize MinIO client

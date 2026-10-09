@@ -1,6 +1,7 @@
 import {
   Bell,
   Hash,
+  LogOut,
   MoreHorizontal,
   Plus,
   Search,
@@ -18,12 +19,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
 import { cn } from '#/lib/utils'
 import type { Channel } from '#/lib/types/channel.type'
 import type { User } from '#/lib/types/auth.type'
 import { Link } from '@tanstack/react-router'
 import type { Workspace, WorkspaceMember } from '#/lib/types/workspace.type'
+import { useLogOut } from '#/hooks/use-auth'
 
 export default function Sidebar({
   channels,
@@ -39,6 +47,7 @@ export default function Sidebar({
 }) {
   const workspace = workspaceDetails.workspace
   const members = workspaceDetails.members
+  const { mutate } = useLogOut()
   return (
     <TooltipProvider delay={200}>
       <aside className="w-60 shrink-0 flex flex-col min-h-0  bg-[#111118] border-r border-[#2A2A3A]">
@@ -202,21 +211,64 @@ export default function Sidebar({
               <TooltipContent>Notifications</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger
+            <DropdownMenu>
+              <DropdownMenuTrigger
                 render={
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
+                    aria-label="Settings"
                   >
                     <Settings className="h-3.5 w-3.5" />
                   </Button>
                 }
               />
 
-              <TooltipContent>Settings</TooltipContent>
-            </Tooltip>
+              <DropdownMenuContent
+                align="end"
+                side="top"
+                className="w-44 bg-[#16161F] border-[#2A2A3A] text-[#F5F0E8]"
+              >
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onSelect={() => {
+                    console.log('Settings selected')
+                  }}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-[#2A2A3A]" />
+
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-400 focus:text-red-400"
+                  onClick={() => mutate()}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
+                    aria-label="Log out"
+                    onClick={() => mutate()}
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </Button>
+                }
+              />
+
+              <TooltipContent>Log out</TooltipContent>
+            </Tooltip> */}
           </div>
         </div>
       </aside>

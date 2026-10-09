@@ -47,7 +47,7 @@ func main() {
 	}
 
 	ors := openrouter.NewOpenRouterService(cfg.OPENROUTER_API_KEY, cfg.OPENROUTER_MODEL, cfg.OPENROUTER_AUDIO_MODEL)
-	st, err := storage.NewMinIOStorage()
+	st, err := storage.NewMinIOStorage(cfg.MINIO_URL, cfg.MINIO_ACESSKEY, cfg.MINIO_SECRET_ACESSKEY)
 	if err != nil {
 		log.Fatal("storage:", err)
 	}

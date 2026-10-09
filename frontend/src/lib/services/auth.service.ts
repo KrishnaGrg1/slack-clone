@@ -51,8 +51,10 @@ export const login = createServerFn({ method: 'POST' })
     }
   })
 
-export const logoutFn = createServerFn({ method: 'POST' }).handler(async () => {
-  const session = await useAppSession()
-  await session.clear()
-  throw redirect({ to: '/' })
-})
+export const logoutFn = createServerFn({ method: 'POST' }).handler(
+  async () => {
+    const session = await useAppSession()
+    await session.clear()
+    return { success: true }
+  },
+)

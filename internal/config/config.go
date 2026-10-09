@@ -19,6 +19,10 @@ type Config struct {
 
 	OPENROUTER_AUDIO_MODEL string
 	FRONTEND_URL           string
+
+	MINIO_URL             string
+	MINIO_ACESSKEY        string
+	MINIO_SECRET_ACESSKEY string
 }
 
 func Load() *Config {
@@ -35,6 +39,9 @@ func Load() *Config {
 		WHISPER_URL:            getEnv("WHISPER_URL", "http://localhost:8080/inference"),
 		OPENROUTER_AUDIO_MODEL: getEnv("OPENROUTER_AUDIO_MODEL", ""),
 		FRONTEND_URL:           getEnv("FRONTEND_URL", ""),
+		MINIO_URL:              getEnv("MINIO_URL", "localhost:9000"),
+		MINIO_ACESSKEY:         getEnv("MINIO_ACCESSKEY", "minioadmin"),
+		MINIO_SECRET_ACESSKEY:  getEnv("MINIO_SECRET_ACCESSKEY", "minioadmin"),
 	}
 }
 
