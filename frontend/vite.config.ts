@@ -10,7 +10,7 @@ const config = defineConfig({
   // resolve: { tsconfigPaths: true },
   //   server: {
   //   allowedHosts: [
-  //     '223a-2400-1a00-5b20-bdbd-8057-5b5-830-ad55.ngrok-free.app',
+  //     '94d0-2400-1a00-5b22-2fb2-7096-5cbe-6c34-65e0.ngrok-free.app',
   //   ],
   // },
   plugins: [devtools(), tailwindcss(), tanstackStart(), nitro(), viteReact()],

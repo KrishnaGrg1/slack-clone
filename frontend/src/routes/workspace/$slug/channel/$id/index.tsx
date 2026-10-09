@@ -501,7 +501,6 @@ function RouteComponent() {
     id,
     workspaceId,
   )
-
   const messages: Message[] = useMemo(() => {
     const raw = channelMessages?.data?.messages ?? []
     return [...raw].sort(

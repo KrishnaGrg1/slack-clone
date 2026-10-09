@@ -1,10 +1,19 @@
 import type { ClientEvent } from '#/lib/types/socket.types'
 
 const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-  // Step 6 (later): add your TURN server here so calls work across strict networks
-}
+  iceServers: [
+    {
+      urls: [
+        `turn:${import.meta.env.VITE_TURN_SERVER}?transport=udp`,
+        'turn:${import.meta.env.VITE_TURN_SERVER}?transport=tcp',
+      ],
+      username: import.meta.env.VITE_TURN_SERVER_USERNAME,
+      credential: import.meta.env.VITE_TURN_SERVER_PASSWORD,
+    },
+  ],
 
+  iceTransportPolicy: 'relay',
+}
 export class PeerManager {
   private peers = new Map<string, RTCPeerConnection>()
   private pendingIce = new Map<string, RTCIceCandidateInit[]>()
