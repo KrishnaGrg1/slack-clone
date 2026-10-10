@@ -5,7 +5,7 @@ const RTC_CONFIG: RTCConfiguration = {
     {
       urls: [
         `turn:${import.meta.env.VITE_TURN_SERVER}?transport=udp`,
-        'turn:${import.meta.env.VITE_TURN_SERVER}?transport=tcp',
+        `turn:${import.meta.env.VITE_TURN_SERVER}?transport=tcp`,
       ],
       username: import.meta.env.VITE_TURN_SERVER_USERNAME,
       credential: import.meta.env.VITE_TURN_SERVER_PASSWORD,
