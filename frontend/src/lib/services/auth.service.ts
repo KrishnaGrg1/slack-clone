@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start'
-import { redirect } from '@tanstack/react-router'
 import { LoginUserSchema, RegisterUserSchema } from '../schema/auth.schema'
 import type { LoginResponse } from '../types/auth.type'
 import axiosInstance, { getApiErrorMessage } from '../axios'

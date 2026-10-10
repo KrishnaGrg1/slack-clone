@@ -1,41 +1,62 @@
-// frontend/src/lib/services/recording.ts
-//
-// Uploads the call recording STRAIGHT to the Go API (not through the
-// TanStack Start / Vite server, which was cutting the request).
-//
-// .env:  VITE_API_URL=http://localhost:8080/api/v1   <- your Go base URL,
-//        including whatever prefix the /calls routes live under.
+// call.service.ts
+import { createServerFn } from '@tanstack/react-start'
+import { getAuthHeader } from './helper'
+import axiosInstance from '../axios'
+import type { UploadCallRecordingAndTranscribeResponse } from '../types/call.type'
 
-import axiosInstance from '#/lib/axios'
-import { getWsToken } from '#/lib/services/ws-token'
+export const uploadRecordingFn = createServerFn({ method: 'POST' })
+  .inputValidator((data: FormData) => {
+    if (!(data instanceof FormData)) throw new Error('Expected FormData')
+    return data
+  })
+  .handler(async ({ data }) => {
+    const callId = String(data.get('call_id'))
+    const channelId = String(data.get('channel_id'))
+    const file = data.get('audio') as File
 
-const API_URL: string =
-  import.meta.env.VITE_API_URL ?? axiosInstance.defaults.baseURL ?? ''
+    // File -> Buffer -> fresh FormData (reliable with axios on Node)
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const form = new FormData()
+    form.append('audio', new Blob([buffer], { type: file.type }), file.name)
+    form.append('channel_id', channelId)
 
-export async function uploadCallRecording(opts: {
-  callId: string
-  channelId: string
-  threadId?: string
-  blob: Blob
-}) {
-  const token = await getWsToken()
-  if (!token) throw new Error('no auth token')
+    const headers = await getAuthHeader()
 
-  // field names must match the Go handler: audio, channel_id, thread_id
-  const form = new FormData()
-  form.append('audio', opts.blob, `${opts.callId}.webm`)
-  form.append('channel_id', opts.channelId)
-  if (opts.threadId) form.append('thread_id', opts.threadId)
-
-  const res = await fetch(`${API_URL}/calls/${opts.callId}/recording`, {
-    method: 'POST',
-    // do NOT set Content-Type: the browser adds the multipart boundary itself
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
+    try {
+      const res =
+        await axiosInstance.post<UploadCallRecordingAndTranscribeResponse>(
+          `/calls/${callId}/recording`,
+          form,
+          { headers }, // axios sets the multipart Content-Type + boundary itself
+        )
+      return res.data
+    } catch (error: any) {
+      console.error(
+        '[upload] backend error',
+        error?.response?.status,
+        error?.response?.data,
+      )
+      throw new Error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to upload and transcribe',
+      )
+    }
   })
 
-  if (!res.ok) {
-    throw new Error(`upload failed: ${res.status} ${await res.text()}`)
-  }
-  return res.json().catch(() => null)
+// client-side wrapper: same signature, so use-call.ts needs no changes
+export const uploadCallRecordingAndTranscribe = async ({
+  callId,
+  channelId,
+  file,
+}: {
+  callId: string
+  channelId: string
+  file: File
+}) => {
+  const fd = new FormData()
+  fd.append('audio', file)
+  fd.append('channel_id', channelId)
+  fd.append('call_id', callId)
+  return uploadRecordingFn({ data: fd })
 }

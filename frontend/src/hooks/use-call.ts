@@ -10,7 +10,7 @@ import type {
   CallSignalEvent,
   ClientEvent,
 } from '#/lib/types/socket.types'
-import { uploadCallRecording } from '#/lib/services/call.service.ts'
+import { uploadCallRecordingAndTranscribe } from '#/lib/services/call.service.ts'
 
 export function useCall({
   channelId,
@@ -111,20 +111,21 @@ export function useCall({
   }, [])
 
   // keeps the recording until the upload succeeded, so "Retry" works
-  const pendingBlobRef = useRef<{ blob: Blob; callId: string } | null>(null)
+  const pendingBlobRef = useRef<{ file: File; callId: string } | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const doUpload = useCallback(
-    async (blob: Blob, callId: string): Promise<boolean> => {
+    async (file: File, callId: string): Promise<boolean> => {
       setUploadError(null)
       try {
-        await uploadCallRecording({ callId, channelId, blob })
+        // await uploadCallRecording({ callId, channelId, blob })
+        await uploadCallRecordingAndTranscribe({ callId, channelId, file })
         pendingBlobRef.current = null
         console.log('[recording] upload OK')
         return true
       } catch (error) {
         console.error('[recording] upload failed', error)
-        pendingBlobRef.current = { blob, callId }
+        pendingBlobRef.current = { file, callId }
         setUploadError(error instanceof Error ? error.message : 'Upload failed')
         return false
       }
@@ -133,11 +134,11 @@ export function useCall({
   )
 
   const uploadRecording = useCallback(
-    async (blob: Blob) => {
+    async (file: File) => {
       const meta = recordingMetaRef.current
       recordingMetaRef.current = null
       if (!meta) return
-      await doUpload(blob, meta.callId)
+      await doUpload(file, meta.callId)
     },
     [doUpload],
   )
@@ -146,7 +147,7 @@ export function useCall({
     const p = pendingBlobRef.current
     if (!p) return
     setSaving(true)
-    const ok = await doUpload(p.blob, p.callId)
+    const ok = await doUpload(p.file, p.callId)
     setSaving(false)
     if (ok) setFinished(true)
   }, [doUpload])
@@ -177,7 +178,11 @@ export function useCall({
       }
 
       const audioStream = new MediaStream(audioTracks)
-      const recorder = new MediaRecorder(audioStream)
+      const recorder = new MediaRecorder(audioStream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : undefined,
+      })
 
       recordingChunksRef.current = []
 
@@ -208,17 +213,20 @@ export function useCall({
           recordingUploadPromiseRef.current = Promise.resolve()
           return
         }
-
-        const blob = new Blob(chunks, {
-          type: recorder.mimeType || 'audio/webm',
-        })
+        const mime = recorder.mimeType || 'audio/webm'
+        const ext = mime.includes('webm')
+          ? 'webm'
+          : mime.includes('mp4')
+            ? 'm4a'
+            : 'ogg'
+        const file = new File(chunks, `recording.${ext}`, { type: mime })
 
         console.log('[recording] blob created:', {
-          size: blob.size,
-          type: blob.type,
+          size: file.size,
+          type: file.type,
         })
 
-        recordingUploadPromiseRef.current = uploadRecording(blob)
+        recordingUploadPromiseRef.current = uploadRecording(file)
       }
 
       recorder.onerror = (event) => {

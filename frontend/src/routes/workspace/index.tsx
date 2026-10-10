@@ -36,8 +36,6 @@ function WorkspaceAvatar({ name }: { name: string }) {
 
 function RouteComponent() {
   const { user, workspaces } = parentRoute.useLoaderData()
-  console.log('data', user)
-  console.log('workspace', workspaces)
   const workspaceList = workspaces?.workspaces ?? []
   const hasWorkspaces = workspaceList.length > 0
 

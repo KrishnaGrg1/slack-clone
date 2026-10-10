@@ -508,7 +508,6 @@ function RouteComponent() {
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     )
   }, [channelMessages])
-  console.log('message', messages)
 
   const memberNameMap = useMemo(
     () =>

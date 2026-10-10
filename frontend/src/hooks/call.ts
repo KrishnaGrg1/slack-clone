@@ -115,7 +115,7 @@ export function useCall({
     uploadingRecordingRef.current = true
     try {
       const formData = new FormData()
-      formData.append('audio', blob, `${meta.callId}.webm`)
+      formData.append('audio', blob, `${meta.callId}.wav`)
       formData.append('channel_id', meta.channelId)
       const token = await getWsToken()
       const data = await axiosInstance.post(
@@ -265,8 +265,6 @@ export function useCall({
       console.log('[call] HANDLE SIGNAL:', msg.msg_type, msg)
       switch (msg.msg_type) {
         case 'call.incoming':
-          console.log('msg userId', msg)
-          console.log('userId', userId)
           if (msg.user_id === userId) return
           setIncomingCall(msg)
           break

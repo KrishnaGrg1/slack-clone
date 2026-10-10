@@ -58,18 +58,21 @@ func (p *RecordingProcess) ProcessTask(ctx context.Context, t *asynq.Task) error
 	if err != nil {
 		return fmt.Errorf("download audio: %w", err)
 	}
-	defer func() {
-		if removeErr := os.Remove(tmpPath); removeErr != nil {
-			log.Printf("failed to remove temp recording %s: %v", tmpPath, removeErr)
-		}
-	}()
-	audio, err := os.Open(tmpPath)
+	defer os.Remove(tmpPath)
+
+	wavPath, err := whisper.ConvertToWav16k(ctx, tmpPath)
+	if err != nil {
+		return fmt.Errorf("convert audio: %w", err)
+	}
+	defer os.Remove(wavPath)
+
+	audio, err := os.Open(wavPath)
 	if err != nil {
 		return fmt.Errorf("open audio: %w", err)
 	}
 	defer audio.Close()
 	// transcribe the audio
-	transcript, err := p.ts.TranscribeAudio(ctx, audio, filepath.Base(tmpPath))
+	transcript, err := p.ts.TranscribeAudio(ctx, audio, filepath.Base(wavPath))
 	if err != nil {
 		return fmt.Errorf("transcribe: %w", err)
 	}

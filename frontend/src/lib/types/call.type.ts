@@ -28,3 +28,8 @@ export interface CallSummary {
   msg_id: string | null
   created_at: string
 }
+
+export interface UploadCallRecordingAndTranscribeResponse {
+  status: boolean
+  message: string
+}

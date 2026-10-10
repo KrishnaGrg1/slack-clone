@@ -7,7 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"uuid"
+
+	"github.com/google/uuid"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -74,7 +75,11 @@ func (s *StorageService) UploadAudioStream(ctx context.Context, objectName strin
 // download from MinIO
 
 func (s *StorageService) DownloadToTemp(ctx context.Context, objectName string) (string, error) {
-	tmpPath := filepath.Join(os.TempDir(), uuid.New().String()+".webm")
+	ext := filepath.Ext(objectName)
+	if ext == "" {
+		ext = ".webm"
+	}
+	tmpPath := filepath.Join(os.TempDir(), uuid.New().String()+ext)
 
 	err := s.client.FGetObject(ctx, s.bucketName, objectName, tmpPath, minio.GetObjectOptions{})
 	if err != nil {
