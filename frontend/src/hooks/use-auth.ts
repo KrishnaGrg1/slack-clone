@@ -31,7 +31,6 @@ export function useRegister() {
   })
 }
 
-
 export function useLogOut() {
   const navigate = useNavigate()
 

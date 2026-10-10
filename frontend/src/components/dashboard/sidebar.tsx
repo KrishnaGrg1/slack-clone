@@ -1,24 +1,20 @@
+import { Link, useMatchRoute } from '@tanstack/react-router'
 import {
   Bell,
+  ChevronDown,
   Hash,
   LogOut,
-  MoreHorizontal,
   Plus,
   Search,
   Settings,
 } from 'lucide-react'
 
-import { Avatar, AvatarBadge, AvatarFallback } from '#/components/ui/avatar'
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
-import { ScrollArea } from '#/components/ui/scroll-area'
-import { Separator } from '#/components/ui/separator'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
+  Avatar,
+  AvatarBadge,
+  AvatarFallback,
+  AvatarImage,
+} from '#/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,14 +22,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
-import { cn } from '#/lib/utils'
-import type { Channel } from '#/lib/types/channel.type'
-import type { User } from '#/lib/types/auth.type'
-import { Link } from '@tanstack/react-router'
-import type { Workspace, WorkspaceMember } from '#/lib/types/workspace.type'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
+} from '#/components/ui/sidebar'
 import { useLogOut } from '#/hooks/use-auth'
 
-export default function Sidebar({
+import { cn } from '#/lib/utils'
+import type { User } from '#/lib/types/auth.type'
+import type { Channel } from '#/lib/types/channel.type'
+import type { Workspace, WorkspaceMember } from '#/lib/types/workspace.type'
+import { getInitials } from '#/lib/initials'
+
+// Every colour below is a theme token (see theme.css). No raw hex values.
+
+const groupLabel =
+  'h-7 px-2 text-xs font-medium tracking-normal text-muted-foreground'
+
+export default function AppSidebar({
   channels,
   workspaceDetails,
   user,
@@ -45,233 +63,211 @@ export default function Sidebar({
   }
   user: User
 }) {
-  const workspace = workspaceDetails.workspace
-  const members = workspaceDetails.members
-  const { mutate } = useLogOut()
+  const { workspace, members } = workspaceDetails
+  const { mutate: logOut } = useLogOut()
+  const matchRoute = useMatchRoute()
+
   return (
-    <TooltipProvider delay={200}>
-      <aside className="w-60 shrink-0 flex flex-col min-h-0  bg-[#111118] border-r border-[#2A2A3A]">
-        {/* Workspace header */}
-        <div className="h-12 flex items-center justify-between px-4 border-b border-[#2A2A3A] shrink-0">
-          <span className="text-sm font-semibold text-[#F5F0E8] tracking-tight font-display">
-            Thread<span className="text-[#E8A838]">Call</span>
-          </span>
-
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              }
-            />
-
-            <TooltipContent>Workspace menu</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <ScrollArea className="flex-1 min-h-0 px-2 py-3">
-          {/* Search */}
-          <div className="relative mb-3 px-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#4A4860]" />
-
-            <Input
-              placeholder="Search..."
-              className="h-8 w-full bg-[#16161F] border-[#2A2A3A] rounded-md pl-8 pr-3 text-xs text-[#F5F0E8] placeholder:text-[#4A4860] focus-visible:border-[#E8A838]/50 focus-visible:ring-0"
-            />
-          </div>
-
-          {/* Channels */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-[10px] font-semibold text-[#4A4860] uppercase tracking-wider">
-                Channels
-              </span>
-
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-transparent"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  }
-                />
-
-                <TooltipContent>Add channel</TooltipContent>
-              </Tooltip>
-            </div>
-
-            <div className="space-y-0.5">
-              {channels.map((ch) => (
-                <Link
-                  key={ch.id}
-                  to="/workspace/$slug/channel/$id"
-                  params={{
-                    slug: workspace.slug,
-                    id: ch.id,
-                  }}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
-                    'text-[#7A7890] hover:text-[#F5F0E8] hover:bg-[#16161F]',
-                  )}
-                  activeProps={{
-                    className: cn(
-                      'w-full flex items-center gap-2 px-2 py-1.5 h-8 rounded-md text-left font-normal',
-                      'bg-[#E8A838]/10 text-[#F5F0E8]',
-                    ),
-                  }}
-                >
-                  <Hash className="h-3.5 w-3.5 shrink-0" />
-
-                  <span className="text-xs flex-1 truncate">{ch.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <Separator className="bg-[#2A2A3A] mb-4" />
-
-          {/* Members */}
-          <div>
-            <div className="flex items-center justify-between px-2 mb-1">
-              <span className="text-[10px] font-semibold text-[#4A4860] uppercase tracking-wider">
-                Members
-              </span>
-            </div>
-
-            <div className="space-y-0.5">
-              {members.map((m) => (
-                <Button
-                  key={m.id}
-                  variant="ghost"
-                  className="w-full cursor-pointer justify-start gap-2 px-2 py-1.5 h-9 rounded-md font-normal text-[#7A7890] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                >
-                  <Avatar className="h-6 w-6 rounded-md shrink-0">
-                    <AvatarFallback
-                      className={cn(
-                        'rounded-full text-[10px] font-bold',
-                        m.id === '1'
-                          ? 'bg-[#E8A838] text-[#0A0A0F]'
-                          : 'bg-[#1D9E75] text-[#0A0A0F]',
-                      )}
-                    >
-                      {m.avatar_url}
-                    </AvatarFallback>
-                    <AvatarBadge
-                      className={cn(
-                        'h-2 w-2 border border-[#111118]',
-                        // m.online ? 'bg-[#1D9E75]' :
-                        'bg-[#4A4860]',
-                      )}
-                    />
-                  </Avatar>
-
-                  <span className="text-xs truncate">{m.username}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        </ScrollArea>
-
-        {/* User footer */}
-        <div className="h-12 flex items-center gap-2 px-3 border-t border-[#2A2A3A] shrink-0">
-          <Avatar className="h-7 w-7 rounded-md shrink-0">
-            <AvatarFallback className="rounded-full bg-[#E8A838] text-[#0A0A0F] text-xs font-bold">
-              {user.avatar_url ?? user.username}
-            </AvatarFallback>
-            <AvatarBadge className="h-2 w-2 bg-[#1D9E75] border border-[#111118]" />
-          </Avatar>
-
-          <span className="text-xs font-medium text-[#F5F0E8] flex-1 truncate">
-            {user.username}
-          </span>
-
-          <div className="flex items-center gap-0.5">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                  >
-                    <Bell className="h-3.5 w-3.5" />
-                  </Button>
-                }
-              />
-
-              <TooltipContent>Notifications</TooltipContent>
-            </Tooltip>
-
+    <Sidebar collapsible="icon">
+      {/* Workspace switcher */}
+      <SidebarHeader className="h-12 justify-center border-b border-sidebar-border px-2 py-0">
+        <SidebarMenu>
+          <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                    aria-label="Settings"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                  </Button>
+                  <SidebarMenuButton className="h-9 font-semibold data-popup-open:bg-sidebar-accent" />
                 }
-              />
-
-              <DropdownMenuContent
-                align="end"
-                side="top"
-                className="w-44 bg-[#16161F] border-[#2A2A3A] text-[#F5F0E8]"
               >
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+                  T
+                </span>
+                <span className="truncate font-display text-sm tracking-tight text-sidebar-accent-foreground">
+                  Thread<span className="text-primary">Call</span>
+                </span>
+                <ChevronDown className="ml-auto size-3.5 text-muted-foreground" />
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="start" side="bottom" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="text-xs text-muted-foreground">Workspace</p>
+                  <p className="truncate text-sm font-medium">
+                    {workspace.slug}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer"
-                  onSelect={() => {
-                    console.log('Settings selected')
-                  }}
+                  render={<Link to="/workspace" />}
                 >
-                  <Settings className="mr-2 h-4 w-4" />
+                  Switch workspace
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>Invite people</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {/* Search (hidden when collapsed to icons) */}
+        <SidebarGroup className="pb-0 group-data-[collapsible=icon]:hidden">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <SidebarInput
+              placeholder="Search"
+              aria-label="Search"
+              className="h-8 border-sidebar-border bg-secondary pl-8 text-[13px] placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:ring-0"
+            />
+          </div>
+        </SidebarGroup>
+
+        {/* Channels */}
+        <SidebarGroup>
+          <SidebarGroupLabel className={groupLabel}>Channels</SidebarGroupLabel>
+          <SidebarGroupAction
+            title="Add channel"
+            aria-label="Add channel"
+            className="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <Plus className="size-3.5" />
+          </SidebarGroupAction>
+
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {channels.map((ch) => {
+                const isActive = !!matchRoute({
+                  to: '/workspace/$slug/channel/$id',
+                  params: { slug: workspace.slug, id: ch.id },
+                })
+
+                return (
+                  <SidebarMenuItem key={ch.id}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      tooltip={ch.name}
+                      className={cn(
+                        'text-[13px]',
+                        isActive &&
+                          'bg-primary/15 font-medium text-sidebar-accent-foreground hover:bg-primary/20',
+                      )}
+                      render={
+                        <Link
+                          to="/workspace/$slug/channel/$id"
+                          params={{ slug: workspace.slug, id: ch.id }}
+                        />
+                      }
+                    >
+                      <Hash
+                        className={cn(
+                          'size-4 shrink-0',
+                          isActive && 'text-primary',
+                        )}
+                      />
+                      <span className="truncate">{ch.name}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        {/* Members */}
+        <SidebarGroup>
+          <SidebarGroupLabel className={groupLabel}>
+            Members
+            <span className="ml-1.5 tabular-nums text-muted-foreground/70">
+              {members.length}
+            </span>
+          </SidebarGroupLabel>
+
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {members.map((m) => (
+                <SidebarMenuItem key={m.id}>
+                  <SidebarMenuButton
+                    tooltip={m.username}
+                    className="text-[13px]"
+                  >
+                    <Avatar className="size-5 shrink-0 rounded-md">
+                      <AvatarImage
+                        src={m.avatar_url ?? undefined}
+                        alt=""
+                        className="rounded-md"
+                      />
+                      <AvatarFallback className="rounded-md bg-secondary text-[9px] font-semibold text-secondary-foreground">
+                        {getInitials(m.username)}
+                      </AvatarFallback>
+                      {/* TODO: switch to bg-success when presence data exists */}
+                      <AvatarBadge className="size-2 border border-sidebar bg-muted-foreground" />
+                    </Avatar>
+                    <span className="truncate">{m.username}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Current user */}
+      <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <SidebarMenuButton
+                    size="lg"
+                    className="h-10 text-[13px] data-popup-open:bg-sidebar-accent"
+                  />
+                }
+              >
+                <Avatar className="size-7 shrink-0 rounded-md">
+                  <AvatarImage
+                    src={user.avatar_url ?? undefined}
+                    alt=""
+                    className="rounded-md"
+                  />
+                  <AvatarFallback className="rounded-md bg-primary text-xs font-bold text-primary-foreground">
+                    {getInitials(user.username)}
+                  </AvatarFallback>
+                  <AvatarBadge className="size-2 border border-sidebar bg-success" />
+                </Avatar>
+                <span className="flex-1 truncate font-medium text-sidebar-accent-foreground">
+                  {user.username}
+                </span>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="start" side="top" className="w-52">
+                <DropdownMenuItem className="cursor-pointer">
+                  <Bell className="mr-2 size-4" />
+                  Notifications
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <Settings className="mr-2 size-4" />
                   Settings
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator className="bg-[#2A2A3A]" />
+                <DropdownMenuSeparator />
 
                 <DropdownMenuItem
-                  className="cursor-pointer text-red-400 focus:text-red-400"
-                  onClick={() => mutate()}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                  onClick={() => logOut()}
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 size-4" />
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
 
-            {/* <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-[#4A4860] hover:text-[#F5F0E8] hover:bg-[#16161F]"
-                    aria-label="Log out"
-                    onClick={() => mutate()}
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                  </Button>
-                }
-              />
-
-              <TooltipContent>Log out</TooltipContent>
-            </Tooltip> */}
-          </div>
-        </div>
-      </aside>
-    </TooltipProvider>
+      <SidebarRail />
+    </Sidebar>
   )
 }
