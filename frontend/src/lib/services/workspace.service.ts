@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import axiosInstance, { getApiErrorMessage } from '../axios'
 
 import type {
+  AcceptInviteLinkResponse,
   CreatWorkspaceInput,
   CreatWorkspaceResponse,
   DeleteWorkspaceResponse,
@@ -15,6 +16,7 @@ import type {
   SearchWorkspaceResponse,
 } from '../types/workspace.type'
 import {
+  AcceptInviteLinkSchema,
   CreateWorkspaceSchema,
   DeleteWorkspaceSchema,
   EditWorkspaceSchema,
@@ -186,3 +188,24 @@ export const getWorkspaceBySlug = createServerFn({ method: 'GET' })
       )
     }
   })
+
+
+  export const acceptInviteLink = createServerFn({ method: 'POST' })
+    .validator((data) => AcceptInviteLinkSchema.parse(data))
+    .handler(async ({ data }) => {
+      try {
+        const headers = await getAuthHeader()
+        const res = await axiosInstance<AcceptInviteLinkResponse>(
+          `/workspaces/invite/${data.invite_code}/join`,
+          {
+            method: 'POST',
+            headers,
+          },  
+    )
+    return res.data
+  } catch (error: unknown) {
+    throw new Error(
+      getApiErrorMessage(error, 'Failed to accept invite link'),
+    )
+  }
+})

@@ -74,7 +74,7 @@ function RouteComponent() {
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:hidden">
           <SidebarTrigger aria-label="Open sidebar" />
           <span className="font-display text-sm font-semibold tracking-tight">
-            Thread<span className="text-primary">Call</span>
+            Thread<span className="text-primary">Call </span>
           </span>
         </header>
 

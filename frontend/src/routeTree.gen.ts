@@ -16,6 +16,8 @@ import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as WorkspaceIndexRouteImport } from './routes/workspace/index'
 import { Route as WorkspaceSlugRouteRouteImport } from './routes/workspace/$slug/route'
 import { Route as WorkspaceCreateRouteImport } from './routes/workspace/create'
+import { Route as WorkspaceSlugIndexRouteImport } from './routes/workspace/$slug/index'
+import { Route as WorkspaceInviteInvite_codeRouteImport } from './routes/workspace/invite/$invite_code'
 import { Route as WorkspaceSlugDmUserIdRouteImport } from './routes/workspace/$slug/dm/$userId'
 import { Route as WorkspaceSlugChannelIdIndexRouteImport } from './routes/workspace/$slug/channel/$id/index'
 import { Route as WorkspaceSlugChannelIdHuddleRouteImport } from './routes/workspace/$slug/channel/$id/huddle'
@@ -55,6 +57,17 @@ const WorkspaceCreateRoute = WorkspaceCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => WorkspaceRouteRoute,
 } as any)
+const WorkspaceSlugIndexRoute = WorkspaceSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkspaceSlugRouteRoute,
+} as any)
+const WorkspaceInviteInvite_codeRoute =
+  WorkspaceInviteInvite_codeRouteImport.update({
+    id: '/invite/$invite_code',
+    path: '/invite/$invite_code',
+    getParentRoute: () => WorkspaceRouteRoute,
+  } as any)
 const WorkspaceSlugDmUserIdRoute = WorkspaceSlugDmUserIdRouteImport.update({
   id: '/dm/$userId',
   path: '/dm/$userId',
@@ -81,17 +94,20 @@ export interface FileRoutesByFullPath {
   '/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace/': typeof WorkspaceIndexRoute
+  '/workspace/invite/$invite_code': typeof WorkspaceInviteInvite_codeRoute
+  '/workspace/$slug/': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
   '/workspace/$slug/channel/$id/huddle': typeof WorkspaceSlugChannelIdHuddleRoute
   '/workspace/$slug/channel/$id/': typeof WorkspaceSlugChannelIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/workspace/$slug': typeof WorkspaceSlugRouteRouteWithChildren
   '/login': typeof authLoginRoute
   '/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace': typeof WorkspaceIndexRoute
+  '/workspace/invite/$invite_code': typeof WorkspaceInviteInvite_codeRoute
+  '/workspace/$slug': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
   '/workspace/$slug/channel/$id/huddle': typeof WorkspaceSlugChannelIdHuddleRoute
   '/workspace/$slug/channel/$id': typeof WorkspaceSlugChannelIdIndexRoute
@@ -105,6 +121,8 @@ export interface FileRoutesById {
   '/(auth)/register': typeof authRegisterRoute
   '/workspace/create': typeof WorkspaceCreateRoute
   '/workspace/': typeof WorkspaceIndexRoute
+  '/workspace/invite/$invite_code': typeof WorkspaceInviteInvite_codeRoute
+  '/workspace/$slug/': typeof WorkspaceSlugIndexRoute
   '/workspace/$slug/dm/$userId': typeof WorkspaceSlugDmUserIdRoute
   '/workspace/$slug/channel/$id/huddle': typeof WorkspaceSlugChannelIdHuddleRoute
   '/workspace/$slug/channel/$id/': typeof WorkspaceSlugChannelIdIndexRoute
@@ -119,17 +137,20 @@ export interface FileRouteTypes {
     | '/register'
     | '/workspace/create'
     | '/workspace/'
+    | '/workspace/invite/$invite_code'
+    | '/workspace/$slug/'
     | '/workspace/$slug/dm/$userId'
     | '/workspace/$slug/channel/$id/huddle'
     | '/workspace/$slug/channel/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/workspace/$slug'
     | '/login'
     | '/register'
     | '/workspace/create'
     | '/workspace'
+    | '/workspace/invite/$invite_code'
+    | '/workspace/$slug'
     | '/workspace/$slug/dm/$userId'
     | '/workspace/$slug/channel/$id/huddle'
     | '/workspace/$slug/channel/$id'
@@ -142,6 +163,8 @@ export interface FileRouteTypes {
     | '/(auth)/register'
     | '/workspace/create'
     | '/workspace/'
+    | '/workspace/invite/$invite_code'
+    | '/workspace/$slug/'
     | '/workspace/$slug/dm/$userId'
     | '/workspace/$slug/channel/$id/huddle'
     | '/workspace/$slug/channel/$id/'
@@ -205,6 +228,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkspaceCreateRouteImport
       parentRoute: typeof WorkspaceRouteRoute
     }
+    '/workspace/$slug/': {
+      id: '/workspace/$slug/'
+      path: '/'
+      fullPath: '/workspace/$slug/'
+      preLoaderRoute: typeof WorkspaceSlugIndexRouteImport
+      parentRoute: typeof WorkspaceSlugRouteRoute
+    }
+    '/workspace/invite/$invite_code': {
+      id: '/workspace/invite/$invite_code'
+      path: '/invite/$invite_code'
+      fullPath: '/workspace/invite/$invite_code'
+      preLoaderRoute: typeof WorkspaceInviteInvite_codeRouteImport
+      parentRoute: typeof WorkspaceRouteRoute
+    }
     '/workspace/$slug/dm/$userId': {
       id: '/workspace/$slug/dm/$userId'
       path: '/dm/$userId'
@@ -230,12 +267,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface WorkspaceSlugRouteRouteChildren {
+  WorkspaceSlugIndexRoute: typeof WorkspaceSlugIndexRoute
   WorkspaceSlugDmUserIdRoute: typeof WorkspaceSlugDmUserIdRoute
   WorkspaceSlugChannelIdHuddleRoute: typeof WorkspaceSlugChannelIdHuddleRoute
   WorkspaceSlugChannelIdIndexRoute: typeof WorkspaceSlugChannelIdIndexRoute
 }
 
 const WorkspaceSlugRouteRouteChildren: WorkspaceSlugRouteRouteChildren = {
+  WorkspaceSlugIndexRoute: WorkspaceSlugIndexRoute,
   WorkspaceSlugDmUserIdRoute: WorkspaceSlugDmUserIdRoute,
   WorkspaceSlugChannelIdHuddleRoute: WorkspaceSlugChannelIdHuddleRoute,
   WorkspaceSlugChannelIdIndexRoute: WorkspaceSlugChannelIdIndexRoute,
@@ -248,12 +287,14 @@ interface WorkspaceRouteRouteChildren {
   WorkspaceSlugRouteRoute: typeof WorkspaceSlugRouteRouteWithChildren
   WorkspaceCreateRoute: typeof WorkspaceCreateRoute
   WorkspaceIndexRoute: typeof WorkspaceIndexRoute
+  WorkspaceInviteInvite_codeRoute: typeof WorkspaceInviteInvite_codeRoute
 }
 
 const WorkspaceRouteRouteChildren: WorkspaceRouteRouteChildren = {
   WorkspaceSlugRouteRoute: WorkspaceSlugRouteRouteWithChildren,
   WorkspaceCreateRoute: WorkspaceCreateRoute,
   WorkspaceIndexRoute: WorkspaceIndexRoute,
+  WorkspaceInviteInvite_codeRoute: WorkspaceInviteInvite_codeRoute,
 }
 
 const WorkspaceRouteRouteWithChildren = WorkspaceRouteRoute._addFileChildren(

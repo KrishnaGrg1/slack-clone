@@ -72,7 +72,7 @@ export interface SearchWorkspaceResponse {
   message: string
   data: {
     pagination: Pagination
-    workspace: Workspace[]
+    workspaces: Workspace[]
   }
 }
 
@@ -98,5 +98,14 @@ export interface GetWorkspaceBySlugResponse {
   data: {
     workspace: Workspace
     members: WorkspaceMember[]
+  }
+}
+
+export interface AcceptInviteLinkResponse {
+  success: boolean
+  message: string
+  data: {
+    workspace: Workspace
+    role: string
   }
 }

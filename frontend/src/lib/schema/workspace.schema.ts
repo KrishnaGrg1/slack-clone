@@ -34,3 +34,7 @@ export const DeleteWorkspaceSchema = z.object({
 export const GetWorkspaceBySlugSchema = z.object({
   slug: z.string(),
 })
+
+export const AcceptInviteLinkSchema = z.object({
+  invite_code: z.string(),
+})
